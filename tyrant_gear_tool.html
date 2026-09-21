@@ -1016,6 +1016,31 @@ window.addEventListener('load', function () {
     }
   };
 
+  var TROOP_STAT_TYPE = {
+    infantryAttack:"Infantry", infantryDefense:"Infantry", infantryHealth:"Infantry",
+    archerAttack:"Archer", archerDefense:"Archer", archerHealth:"Archer",
+    cavalryAttack:"Cavalry", cavalryDefense:"Cavalry", cavalryHealth:"Cavalry"
+  };
+  // Troop-specific stats only pay off if the march actually contains that troop type.
+  // A hero's affinity string lists primary affinity first (e.g. "Infantry · Archer" for
+  // Hadrian) — we assume a march leans heavily toward the primary affinity (~60%+),
+  // carries some secondary, and mostly skips the third, unlisted troop type (per user:
+  // running Cavalry with an Infantry·Archer hero is "a bit of a waste of his skills").
+  var AFFINITY_TROOP_WEIGHT = { primary:1, secondary:0.4, off:0.1 };
+  function heroAffinityTroops(heroDefId){
+    var h = HEROES[heroDefId];
+    if (!h || !h.affinity) return [];
+    return h.affinity.split(/\s*·\s*/).map(function(s){ return s.trim(); });
+  }
+  function troopStatMultiplier(heroDefId, statKey){
+    var troop = TROOP_STAT_TYPE[statKey];
+    if (!troop) return 1;
+    var affinities = heroAffinityTroops(heroDefId);
+    if (affinities[0] === troop) return AFFINITY_TROOP_WEIGHT.primary;
+    if (affinities[1] === troop) return AFFINITY_TROOP_WEIGHT.secondary;
+    return AFFINITY_TROOP_WEIGHT.off;
+  }
+
   var PROFILE_LABEL = {gathering:"Gathering", offense:"Offense", defense:"Defence", support:"Support"};
 
   // Single flat, editable priority list of (hero, job) loadouts — set by the user (2026-09-21),
@@ -1219,17 +1244,59 @@ window.addEventListener('load', function () {
   // — we have no evidence they do anything in Instance/Arena/Dungeon, and content-specific
   // affixes are exactly the kind of thing that plausibly doesn't carry over. Score on the three
   // core flat stats only in that case, still projected to max level.
-  function realItemScore(row, profileKey, useAffixes){
+  function realItemScore(row, profileKey, useAffixes, heroDefId){
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var stats = safeJSON(row.resolved_stats, {});
     var maxStats = equipStatsAtMax(row);
     var score = maxStats.atk*w.atk + maxStats.def*w.def + maxStats.hp*w.hp;
     if (useAffixes !== false){
       Object.keys(w.pct).forEach(function(key){
-        score += (stats[key]||0) * w.pct[key] * 150000;
+        var mult = heroDefId ? troopStatMultiplier(heroDefId, key) : 1;
+        score += (stats[key]||0) * w.pct[key] * mult * 150000;
       });
     }
     return score;
+  }
+
+  // Core flat-stat component only (no percentage affixes) — used to gate swaps that would
+  // break a real, currently-active in-game set (see realSetInfo below): a percentage affix
+  // alone shouldn't be enough to talk someone out of a set bonus, but a genuine stat upgrade
+  // still should.
+  function flatStatScore(row, profileKey){
+    var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
+    var maxStats = equipStatsAtMax(row);
+    return maxStats.atk*w.atk + maxStats.def*w.def + maxStats.hp*w.hp;
+  }
+
+  // The game itself groups a hero's own gear into named sets (Gather, Conqueror, Warden,
+  // Dungeon, ...) reported per-item in the CSV export (march_set_id/instanced_set_id +
+  // owner), completely separate from the hand-researched named-item SETS below (Prospector's
+  // Kit etc). We only know one of these real sets' actual bonus (Gather, confirmed by the
+  // user: full 6-piece set = +6% Gather Speed) — for that one we score the loss directly;
+  // for the rest, where we don't know the magnitude, we fall back to a structural rule:
+  // don't recommend breaking a real, currently-intact multi-piece set unless the
+  // replacement is a genuine flat-stat upgrade, not just a marginally-better affix.
+  var REAL_SET_BONUS = {
+    "Gather": { stat: "gatherSpeed", pieceCount: 6, fullSetBonus: 0.06 }
+  };
+  function realSetInfo(row, context){
+    var idKey = context === "instanced" ? "instanced_set_id" : "march_set_id";
+    var ownerKey = context === "instanced" ? "instanced_set_owner_hero_id" : "march_set_owner_hero_id";
+    var nameKey = context === "instanced" ? "instanced_set_name" : "march_set_name";
+    var id = row[idKey];
+    if (!id) return null;
+    return { id: id, ownerHeroId: row[ownerKey], name: row[nameKey] };
+  }
+  // Score value of the bonus a hero would LOSE by breaking a real set that's currently
+  // complete (pieceCount pieces owned). Returns 0 when we have no data for that set name,
+  // or the set isn't actually complete yet (so nothing confirmed is at stake).
+  function realSetBonusLossScore(setInfo, currentSetSize, profileKey){
+    if (!setInfo || !setInfo.name) return 0;
+    var known = REAL_SET_BONUS[setInfo.name];
+    if (!known || currentSetSize < known.pieceCount) return 0;
+    var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
+    var weight = w.pct[known.stat] || 0;
+    return known.fullSetBonus * weight * 150000;
   }
 
   function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip){
@@ -1249,7 +1316,7 @@ window.addEventListener('load', function () {
   // from a verified set-bonus tier (Prospector's Kit, Beastlord's Hunt, etc.) and, if swapping
   // in the missing set piece scores higher than the naive pick once the set bonus is counted,
   // make that swap. Only sets in SET_BONUS_TIERS are considered — see the note there.
-  function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip){
+  function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId){
     var w = ROLE_WEIGHTS[profile] || ROLE_WEIGHTS.offense;
     SETS.forEach(function(set){
       var tiers = SET_BONUS_TIERS[set.name];
@@ -1279,7 +1346,8 @@ window.addEventListener('load', function () {
       var deltaScore = 0;
       Object.keys(nextStats).forEach(function(k){
         var delta = (nextStats[k] || 0) - (achievedStats[k] || 0);
-        deltaScore += delta * (w.pct[k] || 0) * 150000;
+        var mult = heroDefId ? troopStatMultiplier(heroDefId, k) : 1;
+        deltaScore += delta * (w.pct[k] || 0) * mult * 150000;
       });
       if (deltaScore <= 0) return;
 
@@ -1292,8 +1360,8 @@ window.addEventListener('load', function () {
         if (!candidate) continue;
 
         var existingPick = heroResult[piece.slot] ? heroResult[piece.slot].item : null;
-        var existingScore = existingPick ? realItemScore(existingPick, profile) : 0;
-        var candidateScore = realItemScore(candidate, profile) + deltaScore;
+        var existingScore = existingPick ? realItemScore(existingPick, profile, true, heroDefId) : 0;
+        var candidateScore = realItemScore(candidate, profile, true, heroDefId) + deltaScore;
         if (candidateScore <= existingScore) continue;
 
         if (existingPick && (!currentItem || existingPick.item_id !== currentItem.item_id)){
@@ -1315,12 +1383,13 @@ window.addEventListener('load', function () {
     });
   }
 
-  function topContributingStat(row, profileKey){
+  function topContributingStat(row, profileKey, heroDefId){
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var stats = safeJSON(row.resolved_stats, {});
     var best = {key:null, val:0};
     Object.keys(w.pct).forEach(function(key){
-      var c = (stats[key]||0) * w.pct[key];
+      var mult = heroDefId ? troopStatMultiplier(heroDefId, key) : 1;
+      var c = (stats[key]||0) * w.pct[key] * mult;
       if (c > best.val){ best = {key:key, val:c}; }
     });
     return best.key;
@@ -1370,19 +1439,45 @@ window.addEventListener('load', function () {
         currentIds.forEach(function(id){ var r = equipById[id]; if (r) currentBySlot[r.slot] = r; });
       }
 
+      // How many of the hero's currently-equipped pieces (in this context) share a real
+      // in-game set with each other — used below to protect an intact multi-piece set from
+      // being broken for a marginal percentage-affix gain (see realSetInfo/flatStatScore).
+      var setSizeBySlot = {};
+      Object.keys(currentBySlot).forEach(function(slot){
+        var info = realSetInfo(currentBySlot[slot], context);
+        if (!info || info.ownerHeroId !== h.hero_id){ setSizeBySlot[slot] = 0; return; }
+        var count = 0;
+        Object.keys(currentBySlot).forEach(function(otherSlot){
+          var otherInfo = realSetInfo(currentBySlot[otherSlot], context);
+          if (otherInfo && otherInfo.id === info.id && otherInfo.ownerHeroId === h.hero_id) count++;
+        });
+        setSizeBySlot[slot] = count;
+      });
+
       var useAffixes = context !== "instanced";
       var heroResult = {};
       CSV_SLOTS.forEach(function(slot){
         var currentItem = currentBySlot[slot];
+        var currentSetInfo = currentItem ? realSetInfo(currentItem, context) : null;
+        var currentIsSetProtected = currentItem && setSizeBySlot[slot] >= 2;
         var candidates = equip.filter(function(row){
           if (row.slot !== slot) return false;
           if (currentItem && row.item_id === currentItem.item_id) return true;
           if (wornIds[row.item_id]) return false;
           if (claimedBenchIds[row.item_id]) return false;
+          if (currentIsSetProtected){
+            var rowInfo = realSetInfo(row, context);
+            var sameSet = rowInfo && currentSetInfo && rowInfo.id === currentSetInfo.id && rowInfo.ownerHeroId === currentSetInfo.ownerHeroId;
+            if (!sameSet){
+              var flatDelta = flatStatScore(row, profile) - flatStatScore(currentItem, profile);
+              var setLoss = realSetBonusLossScore(currentSetInfo, setSizeBySlot[slot], profile);
+              if (flatDelta <= setLoss) return false;
+            }
+          }
           return true;
         });
         if (candidates.length === 0){ heroResult[slot] = null; return; }
-        candidates.sort(function(a,b){ return realItemScore(b, profile, useAffixes) - realItemScore(a, profile, useAffixes); });
+        candidates.sort(function(a,b){ return realItemScore(b, profile, useAffixes, lo.hero) - realItemScore(a, profile, useAffixes, lo.hero); });
         var best = candidates[0];
         if (!currentItem || best.item_id !== currentItem.item_id){
           claimedBenchIds[best.item_id] = true;
@@ -1390,13 +1485,13 @@ window.addEventListener('load', function () {
         heroResult[slot] = {
           item: best,
           changed: !currentItem || currentItem.item_id !== best.item_id,
-          why: useAffixes ? topContributingStat(best, profile) : null
+          why: useAffixes ? topContributingStat(best, profile, lo.hero) : null
         };
       });
       // Set bonuses are themselves percentage-affix-style bonuses (Gather Speed, PvP ATK%, ...)
       // tied to the same unverified-for-Instance channels, so skip them here too for consistency.
       if (useAffixes){
-        applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip);
+        applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, lo.hero);
       }
       results[lo.id] = { loadout: lo, isPrimary: isPrimary, hero: h, slots: heroResult };
     });
@@ -1410,7 +1505,7 @@ window.addEventListener('load', function () {
     heroes.forEach(function(h){ byDef[h.hero_definition_id] = h; });
 
     var html = '<div class="section-heading">Gear Recommender</div>';
-    html += '<div class="note-box"><strong>How this works:</strong> one flat priority list of (hero, job) loadouts — claims resolve strictly top-to-bottom across the whole list, so a hero ranked high always wins a contested item over anyone ranked lower, whatever job they’re doing. A hero’s <em>first</em> loadout in the list is scored against their actual currently-equipped gear; any later loadout for the same hero is a reserve kit built only from whatever bench is left (since only one loadout is ever physically worn at a time). Add or remove loadouts below, drag the priority with the arrows. Flat ATK/DEF/HP are scored at each item’s <strong>projected max level</strong>, not its current level — an under-leveled Legendary can legitimately beat an already-maxed Epic once you account for its higher ceiling (verified against real level-scaling data, gold text shows the projection when it differs from current). Percentage affixes don’t scale with level, so those stay on the item’s actual current roll. <strong>Instanced (Arena/Dungeon) loadouts score core ATK/DEF/HP only, no percentage affixes or set bonuses</strong> — those channels were verified for March combat specifically and we have no evidence they apply in Instance. Treat picks as strong candidates to sanity-check, not gospel.</div>';
+    html += '<div class="note-box"><strong>How this works:</strong> one flat priority list of (hero, job) loadouts — claims resolve strictly top-to-bottom across the whole list, so a hero ranked high always wins a contested item over anyone ranked lower, whatever job they’re doing. A hero’s <em>first</em> loadout in the list is scored against their actual currently-equipped gear; any later loadout for the same hero is a reserve kit built only from whatever bench is left (since only one loadout is ever physically worn at a time). Add or remove loadouts below, drag the priority with the arrows. Flat ATK/DEF/HP are scored at each item’s <strong>projected max level</strong>, not its current level — an under-leveled Legendary can legitimately beat an already-maxed Epic once you account for its higher ceiling (verified against real level-scaling data, gold text shows the projection when it differs from current). Percentage affixes don’t scale with level, so those stay on the item’s actual current roll. <strong>Instanced (Arena/Dungeon) loadouts score core ATK/DEF/HP only, no percentage affixes or set bonuses</strong> — those channels were verified for March combat specifically and we have no evidence they apply in Instance. <strong>Troop-specific stats (Infantry/Archer/Cavalry ATK/DEF/HP)</strong> are weighted by each hero’s affinity — full weight for their primary troop type, reduced for secondary, and mostly discounted for the troop type they don’t run at all. <strong>Real in-game sets</strong> (Gather, Conqueror, Warden, Dungeon, ...) reported in your export won’t be recommended away for a smaller percentage-affix gain — only for a genuine flat-stat upgrade or another piece of the same set. Treat picks as strong candidates to sanity-check, not gospel.</div>';
 
     html += '<div class="loadout-add-row">' +
       '<select id="loadoutHeroSelect">' + heroes.map(function(h){
