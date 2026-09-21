@@ -1,0 +1,8 @@
+# Raw reference screenshots used while building the phase docs — not part of the deliverable,
+# and may show account/guild-identifying info, so kept local-only.
+ingame screenshots/
+battle with gealt/
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tyrant Gear Compendium</title>
+<style>
+  :root{
+    --bg:#0d0f14;
+    --panel:#161a23;
+    --panel2:#1d222d;
+    --border:#2a3140;
+    --text:#e8e6df;
+    --text-dim:#9aa1b0;
+    --gold:#d9a441;
+    --gold-bright:#f0c674;
+    --legendary:#e8a13a;
+    --epic:#a86ee8;
+    --rare:#4f9ee8;
+    --uncommon:#5bc06a;
+    --common:#8a90a0;
+    --good:#5bc06a;
+    --warn:#e0b84f;
+    --bad:#e0665f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:0;
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    line-height:1.45;
+  }
+  #app{max-width:1100px; margin:0 auto; padding:0 12px 60px;}
+  header{padding:18px 4px 8px;}
+  header h1{
+    margin:0; font-size:1.5rem; letter-spacing:.03em;
+    color:var(--gold-bright); text-transform:uppercase;
+  }
+  header p{margin:4px 0 0; color:var(--text-dim); font-size:.85rem;}
+  header p a{color:var(--gold); text-decoration:none;}
+  header p a:hover{text-decoration:underline;}
+
+  nav#tabNav{
+    display:flex; gap:6px; margin:14px 0 16px; flex-wrap:wrap;
+    border-bottom:1px solid var(--border); padding-bottom:0;
+  }
+  .tab-btn{
+    background:transparent; border:none; color:var(--text-dim);
+    padding:10px 16px; font-size:.95rem; cursor:pointer;
+    border-bottom:2px solid transparent; font-weight:600;
+    letter-spacing:.02em;
+  }
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{color:var(--gold-bright); border-bottom-color:var(--gold);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  select, button.action{
+    background:var(--panel2); color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:8px 10px; font-size:.9rem;
+  }
+  select:focus{outline:1px solid var(--gold);}
+
+  .filters-label{font-size:.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; margin:12px 0 6px;}
+  .chip-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .chip{
+    display:flex; align-items:center; gap:6px;
+    background:var(--panel2); border:1px solid var(--border); border-radius:20px;
+    padding:6px 13px; font-size:.8rem; color:var(--text-dim); cursor:pointer;
+    transition:border-color .15s, color .15s, background .15s; user-select:none;
+  }
+  .chip svg{width:16px; height:16px; flex-shrink:0;}
+  .chip:hover{color:var(--text); border-color:var(--gold);}
+  .chip.active{color:var(--gold-bright); border-color:var(--gold); background:rgba(217,164,65,.14);}
+
+  .icon-legend{display:flex; gap:16px; flex-wrap:wrap; margin:2px 0 16px; font-size:.72rem; color:var(--text-dim);}
+  .icon-legend .legend-item{display:flex; align-items:center; gap:5px;}
+  .icon-legend svg{width:15px; height:15px; opacity:.8;}
+
+  .tier-header{
+    margin:22px 0 8px; padding:8px 12px; border-radius:6px;
+    font-size:1rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    border-left:4px solid var(--tier-color, var(--gold));
+    background:var(--panel); cursor:pointer;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .tier-header:hover{background:var(--panel2);}
+  .tier-header .chevron{font-size:.8rem; transition:transform .15s; display:inline-block;}
+  .tier-header.collapsed .chevron{transform:rotate(-90deg);}
+  .tier-header.legendary{--tier-color:var(--legendary); color:var(--legendary);}
+  .tier-header.epic{--tier-color:var(--epic); color:var(--epic);}
+  .tier-header.rare{--tier-color:var(--rare); color:var(--rare);}
+  .tier-header.uncommon{--tier-color:var(--uncommon); color:var(--uncommon);}
+  .tier-header.common{--tier-color:var(--common); color:var(--common);}
+
+  .dim{color:var(--text-dim); font-size:.8rem;}
+  .stat-num{font-variant-numeric:tabular-nums;}
+
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; margin-bottom:6px;}
+  .item-card{
+    background:var(--panel); border:1px solid var(--border); border-top-width:3px; border-top-style:solid;
+    border-radius:10px; padding:12px; display:flex; flex-direction:column; gap:8px;
+  }
+  .card-top{display:flex; gap:10px; align-items:flex-start;}
+  .card-top .slot-icon{
+    flex-shrink:0; width:28px; height:28px; padding:5px; box-sizing:border-box;
+    background:var(--panel2); border-radius:7px; color:var(--text-dim);
+  }
+  .card-top .slot-icon svg{width:100%; height:100%; display:block;}
+  .card-title{min-width:0;}
+  .card-title .item-name{font-weight:700; font-size:.92rem; line-height:1.28; color:var(--text);}
+  .card-sub{display:flex; gap:6px; margin-top:4px; flex-wrap:wrap;}
+  .theme-pill{font-size:.63rem; padding:1px 6px; border-radius:4px; border:1px solid; text-transform:uppercase; font-weight:700;}
+
+  .stat-chips{display:flex; gap:6px;}
+  .stat-chip{flex:1; background:var(--panel2); border-radius:6px; padding:4px 4px; text-align:center;}
+  .stat-chip .sc-label{display:block; font-size:.6rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.03em;}
+  .stat-chip .sc-val{display:block; font-size:.92rem; font-weight:700; font-variant-numeric:tabular-nums; color:var(--text);}
+
+  .base-stat{font-size:.75rem; color:var(--gold); font-weight:600;}
+  .affix-text{font-size:.76rem; color:var(--text-dim); flex:1;}
+  .role-badges{display:flex; flex-wrap:wrap; gap:4px; margin-top:auto; padding-top:2px;}
+
+  .equip-preview-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+  .equip-preview{
+    display:flex; align-items:center; gap:6px; background:var(--panel);
+    border:1px solid var(--border); border-radius:8px; padding:6px 11px; font-size:.78rem;
+  }
+  .equip-preview svg{width:16px; height:16px; flex-shrink:0; color:var(--text-dim);}
+  .equip-preview.empty{color:var(--text-dim); font-style:italic;}
+
+  .badge{
+    display:inline-block; padding:2px 7px; margin:1px 3px 1px 0; border-radius:10px;
+    font-size:.68rem; font-weight:700; letter-spacing:.02em; white-space:nowrap;
+  }
+  .badge.b3{background:rgba(91,192,106,.18); color:var(--good); border:1px solid rgba(91,192,106,.4);}
+  .badge.b2{background:rgba(224,184,79,.15); color:var(--warn); border:1px solid rgba(224,184,79,.35);}
+
+  .rarity-pill{
+    display:inline-block; padding:1px 7px; border-radius:4px; font-size:.7rem;
+    font-weight:700; text-transform:uppercase;
+  }
+  .rarity-pill.legendary{color:var(--legendary); border:1px solid var(--legendary);}
+  .rarity-pill.epic{color:var(--epic); border:1px solid var(--epic);}
+  .rarity-pill.rare{color:var(--rare); border:1px solid var(--rare);}
+  .rarity-pill.uncommon{color:var(--uncommon); border:1px solid var(--uncommon);}
+  .rarity-pill.common{color:var(--common); border:1px solid var(--common);}
+
+  .note-box{
+    background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--gold);
+    border-radius:6px; padding:10px 14px; margin-bottom:16px; font-size:.85rem; color:var(--text-dim);
+  }
+  .note-box strong{color:var(--text);}
+
+  /* Build guides */
+  .guide-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px;}
+  .guide-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:16px;
+  }
+  .guide-card h3{margin:0 0 6px; color:var(--gold-bright); font-size:1.1rem;}
+  .confidence{
+    display:inline-block; font-size:.68rem; font-weight:700; text-transform:uppercase;
+    padding:2px 8px; border-radius:10px; margin-bottom:10px; letter-spacing:.03em;
+  }
+  .confidence.verified{background:rgba(91,192,106,.15); color:var(--good); border:1px solid rgba(91,192,106,.4);}
+  .confidence.reasoned{background:rgba(224,184,79,.15); color:var(--warn); border:1px solid rgba(224,184,79,.4);}
+  .confidence.provisional{background:rgba(224,102,95,.15); color:var(--bad); border:1px solid rgba(224,102,95,.4);}
+  .guide-blurb{font-size:.82rem; color:var(--text-dim); margin-bottom:12px;}
+  .pick-row{
+    display:flex; gap:10px; padding:7px 0; border-bottom:1px dashed var(--border); font-size:.82rem;
+  }
+  .pick-row:last-child{border-bottom:none;}
+  .pick-slot{width:84px; flex-shrink:0; color:var(--text-dim); font-weight:600; display:flex; align-items:center; gap:5px;}
+  .pick-slot svg{width:15px; height:15px; flex-shrink:0;}
+  .pick-body b{color:var(--text);}
+  .pick-alt{font-size:.75rem; color:var(--text-dim); margin-top:2px;}
+  .hero-box{
+    margin-top:12px; padding:10px 12px; background:var(--panel2); border-radius:6px; font-size:.8rem;
+  }
+  .hero-box b{color:var(--gold-bright);}
+  .guide-note{margin-top:10px; font-size:.75rem; color:var(--text-dim); font-style:italic;}
+
+  /* Build your own */
+  .builder-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px; margin-bottom:14px;}
+  .slot-picker label{display:flex; align-items:center; gap:6px; font-size:.78rem; color:var(--text-dim); margin-bottom:4px; text-transform:uppercase; letter-spacing:.03em;}
+  .slot-picker label svg{width:15px; height:15px; flex-shrink:0;}
+  .slot-picker select{width:100%;}
+
+  .totals-row{display:flex; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+  .total-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:8px;
+    padding:12px 18px; min-width:100px;
+  }
+  .total-card .label{font-size:.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.03em;}
+  .total-card .value{font-size:1.4rem; font-weight:700; color:var(--gold-bright); font-variant-numeric:tabular-nums;}
+
+  .set-active{
+    background:rgba(217,164,65,.1); border:1px solid rgba(217,164,65,.35); border-radius:6px;
+    padding:8px 12px; margin-bottom:10px; font-size:.8rem;
+  }
+  .set-active b{color:var(--gold-bright);}
+
+  .fitness-bar-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .fitness-label{width:120px; flex-shrink:0; font-size:.82rem; color:var(--text-dim);}
+  .fitness-track{flex:1; background:var(--panel2); border-radius:6px; height:18px; overflow:hidden; border:1px solid var(--border);}
+  .fitness-fill{height:100%; background:linear-gradient(90deg, var(--gold), var(--gold-bright)); border-radius:6px 0 0 6px;}
+  .fitness-pct{width:44px; text-align:right; font-size:.8rem; font-variant-numeric:tabular-nums; color:var(--text);}
+
+  /* My Roster */
+  .roster-upload{
+    background:var(--panel); border:1px dashed var(--border); border-radius:10px;
+    padding:22px; text-align:center; margin-bottom:18px;
+  }
+  .roster-upload input[type=file]{color:var(--text-dim); font-size:.82rem;}
+  .roster-upload .upload-hint{font-size:.78rem; color:var(--text-dim); margin-top:8px;}
+  .roster-upload .upload-or{font-size:.72rem; color:var(--text-dim); margin:14px 0 10px; text-transform:uppercase; letter-spacing:.08em;}
+  .roster-paste{
+    width:100%; max-width:520px; height:70px; resize:vertical; box-sizing:border-box;
+    background:var(--panel2); border:1px solid var(--border); border-radius:8px;
+    color:var(--text); font-size:.8rem; padding:10px; font-family:inherit;
+  }
+  .roster-paste::placeholder{color:var(--text-dim);}
+  .btn-secondary{
+    display:block; margin:10px auto 0; padding:8px 18px; border-radius:8px;
+    background:var(--panel2); border:1px solid var(--border); color:var(--gold-bright);
+    font-size:.8rem; cursor:pointer;
+  }
+  .btn-secondary:hover{border-color:var(--gold); background:var(--panel);}
+  .roster-error{color:var(--bad); font-size:.82rem; margin-top:8px;}
+
+  .roster-toolbar{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;}
+  .roster-toolbar .roster-file-label{font-size:.78rem; color:var(--text-dim);}
+
+  .section-heading{color:var(--gold-bright); font-size:1.05rem; margin:24px 0 10px; letter-spacing:.02em;}
+  .section-heading:first-child{margin-top:0;}
+
+  .hero-roster-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px; margin-bottom:8px;}
+  .hero-card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px;}
+  .hero-card-header{display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:4px;}
+  .hero-card-header .hname{font-weight:700; color:var(--gold-bright); font-size:1rem;}
+  .hero-card-header .hpower{font-size:.72rem; color:var(--text-dim); text-align:right; white-space:nowrap;}
+  .hero-meta{font-size:.75rem; color:var(--text-dim); margin-bottom:8px;}
+  .hero-role-pill{display:inline-block; font-size:.65rem; font-weight:700; text-transform:uppercase; padding:2px 8px; border-radius:10px; background:rgba(217,164,65,.14); color:var(--gold-bright); border:1px solid rgba(217,164,65,.4); margin-top:4px;}
+  .hero-loadout-row{display:flex; align-items:center; gap:7px; padding:4px 0; font-size:.78rem; border-bottom:1px dashed var(--border);}
+  .hero-loadout-row:last-child{border-bottom:none;}
+  .hero-loadout-row svg{width:14px; height:14px; flex-shrink:0; color:var(--text-dim);}
+  .hero-loadout-row .hl-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .hero-loadout-row .hl-stats{color:var(--text-dim); font-size:.7rem; white-space:nowrap;}
+  .hero-loadout-row.empty{color:var(--bad); font-style:italic;}
+
+  .quickwin-list{display:flex; flex-direction:column; gap:8px; margin-bottom:8px;}
+  .quickwin-item{
+    background:var(--panel); border:1px solid var(--border); border-left:3px solid var(--good);
+    border-radius:6px; padding:9px 12px; font-size:.82rem;
+  }
+  .quickwin-item.warn-item{border-left-color:var(--warn);}
+  .quickwin-item b{color:var(--text);}
+  .quickwin-item .qw-detail{color:var(--text-dim); font-size:.76rem; margin-top:2px;}
+
+  .bench-rarity-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .bench-rarity-label{width:100px; flex-shrink:0; font-size:.82rem; font-weight:700;}
+  .bench-rarity-count{font-size:.82rem; color:var(--text-dim);}
+
+  /* Gear recommender */
+  .loadout-add-row{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
+  .loadout-add-row select{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:7px 10px; font-size:.85rem;
+  }
+  .priority-list{display:flex; flex-direction:column; gap:6px; margin-bottom:16px; max-width:560px;}
+  .priority-item{
+    display:flex; align-items:center; gap:10px; padding:7px 10px;
+    background:var(--panel); border:1px solid var(--border); border-radius:6px; font-size:.85rem;
+  }
+  .priority-item .rank{width:22px; color:var(--gold-bright); font-weight:700; text-align:right; flex-shrink:0;}
+  .priority-item .pname{flex:1;}
+  .priority-item .pmoves{display:flex; gap:4px; flex-shrink:0;}
+  .profile-pill{font-size:.68rem; padding:2px 8px; border-radius:10px; border:1px solid var(--border); color:var(--text-dim); flex-shrink:0;}
+  .garrison-flag{font-size:.85rem; cursor:help; flex-shrink:0; opacity:.85;}
+  .garrison-note{font-size:.76rem; color:var(--gold-bright); background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:6px 9px; margin-top:6px;}
+  .profile-pill.profile-gathering{border-color:#5a9a5a; color:#8fd08f;}
+  .profile-pill.profile-offense{border-color:#c06a5a; color:#e69a8a;}
+  .profile-pill.profile-defense{border-color:#5a7ac0; color:#8fb0e6;}
+  .profile-pill.profile-support{border-color:#b08fd0; color:#d0b8ee;}
+  .hero-group{margin-bottom:20px; padding-bottom:4px; border-bottom:1px solid var(--border);}
+  .hero-group-name{font-size:1rem; color:var(--gold-bright); font-weight:700; margin-bottom:8px;}
+  .priority-item .pmoves button{
+    background:var(--panel2); border:1px solid var(--border); color:var(--text-dim);
+    border-radius:4px; width:24px; height:24px; cursor:pointer; font-size:.8rem; line-height:1;
+  }
+  .priority-item .pmoves button:hover{color:var(--gold-bright); border-color:var(--gold);}
+
+  .rec-card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px;}
+  .rec-card-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
+  .rec-card-header .rname{font-weight:700; color:var(--gold-bright);}
+  .rec-card-header .rprofile{font-size:.7rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:.03em;}
+  .rec-slot-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px dashed var(--border); font-size:.8rem; flex-wrap:wrap;}
+  .rec-slot-row:last-child{border-bottom:none;}
+  .rec-slot-row svg{width:15px; height:15px; flex-shrink:0; color:var(--text-dim);}
+  .rec-slot-name{width:78px; flex-shrink:0; color:var(--text-dim); font-weight:600;}
+  .rec-item-name{font-weight:600;}
+  .rec-why{color:var(--text-dim); font-size:.74rem;}
+  .rec-projected{color:var(--gold-bright); font-size:.74rem; white-space:nowrap;}
+  .rec-empty{color:var(--bad); font-style:italic;}
+
+  @media (max-width:600px){
+    header h1{font-size:1.2rem;}
+    .tab-btn{padding:9px 11px; font-size:.85rem;}
+    .card-grid{grid-template-columns:1fr 1fr;}
+    .totals-row{gap:10px;}
+    .total-card{padding:10px 14px; min-width:80px;}
+    .fitness-label{width:92px; font-size:.74rem;}
+  }
+  @media (max-width:420px){
+    .card-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Tyrant Gear Compendium</h1>
+    <p>132 items · verified combat mechanics · see <a href="phase1_combat_mechanics_notes.md">Phase 1</a>, <a href="phase2_gear_compendium.md">Phase 2</a>, <a href="phase3_heroes.md">Phase 3</a> notes for full reasoning.</p>
+  </header>
+
+  <nav id="tabNav">
+    <button class="tab-btn active" data-tab="reference">Gear Reference</button>
+    <button class="tab-btn" data-tab="guides">Build Guides</button>
+    <button class="tab-btn" data-tab="builder">Build Your Own</button>
+    <button class="tab-btn" data-tab="roster">My Roster</button>
+  </nav>
+
+  <main>
+    <section id="panel-reference" class="panel active">
+      <div class="note-box">
+        <strong>Reading the numbers:</strong> ATK/DEF/HP are Level 1, 0% quality baseline values — real equipped stats scale much higher with item level and quality roll (an endgame Epic weapon can show hundreds of thousands). Role badges are computed from each item's affixes using the verified mechanics — <span style="color:var(--good)">green (●●●)</span> means a strong pick for that role, <span style="color:var(--warn)">amber (●●)</span> means a decent secondary option.
+      </div>
+      <div class="filters-label">Filter by Slot</div>
+      <div id="slotChips" class="chip-row"></div>
+      <div class="filters-label">Filter by Role</div>
+      <div id="roleChips" class="chip-row"></div>
+      <div id="referenceContent"></div>
+    </section>
+
+    <section id="panel-guides" class="panel">
+      <div id="guidesContent"></div>
+    </section>
+
+    <section id="panel-builder" class="panel">
+      <div id="builderContent"></div>
+    </section>
+
+    <section id="panel-roster" class="panel">
+      <div id="rosterContent"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+window.addEventListener('load', function () {
+
+  // ---------------------------------------------------------------
+  // DATA
+  // ---------------------------------------------------------------
+  var SLOTS = ["Weapon","Armor","Helm","Boots","Ring","Accessory"];
+  var RARITIES = ["legendary","epic","rare","uncommon","common"];
+  var ROLES = ["Gathering","Monster Den","PvP Offense","PvP Defense","Daily Dungeon","Weekly Boss"];
+  var RARITY_MULT = {legendary:1.1, epic:1.0, rare:0.82, uncommon:0.65, common:0.45};
+
+  var SLOT_ICONS = {
+    Weapon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="18" y2="6"/><line x1="14" y1="4" x2="20" y2="10"/><line x1="3" y1="21" x2="6" y2="18"/></svg>',
+    Armor:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 L19 6 V12 C19 17 15.5 20.5 12 22 C8.5 20.5 5 17 5 12 V6 Z"/></svg>',
+    Helm:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15 C4 8 7.5 4 12 4 C16.5 4 20 8 20 15"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="11" y1="15" x2="11" y2="19"/><line x1="13" y1="15" x2="13" y2="19"/></svg>',
+    Boots:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3 V13 L5.5 16.5 C4.7 17.3 5 19 6.3 19 H19 C19.8 19 20 18 19.4 17.4 L14 13 V3 Z"/></svg>',
+    Ring:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"><circle cx="12" cy="14.5" r="6.5"/><path d="M9 8.5 L12 3 L15 8.5"/></svg>',
+    Accessory:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3 V7"/><path d="M7 11 L12 7 L17 11 L12 21 Z"/></svg>'
+  };
+
+  var THEME_META = {
+    "offense":{label:"Offense", color:"#e0665f"},
+    "defense":{label:"Defense", color:"#4f9ee8"},
+    "economy":{label:"Economy", color:"#5bc06a"},
+    "pvp-off":{label:"PvP Offense", color:"#e8a13a"},
+    "pvp-def":{label:"PvP Defense", color:"#a86ee8"},
+    "dungeon":{label:"Dungeon", color:"#d9a441"}
+  };
+
+  var refState = { slot:"all", role:"all", expanded:{legendary:true, epic:true, rare:false, uncommon:false, common:false} };
+
+  var ITEMS = [
+    {name:"Ring of Eternal Vigil", slot:"Ring", rarity:"legendary", atk:10, def:15, hp:61, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Cav Def (guar.); Army Defense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Heart of the Mountain", slot:"Accessory", rarity:"legendary", atk:9, def:10, hp:92, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Archer Def (guar.); Army Defense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Heart of the World", slot:"Accessory", rarity:"legendary", atk:18, def:8, hp:69, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); Economy random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Conqueror's Signet", slot:"Ring", rarity:"legendary", atk:19, def:10, hp:43, bsp:2, bst:"PvP ATK", theme:"pvp-off", affixes:"+2% PvP ATK base; 4-slot PvP Offense pool; Conqueror's Regalia set", source:"PvP Offense (TH18+, Core only)"},
+    {name:"Storewarden Plate", slot:"Armor", rarity:"legendary", atk:6, def:19, hp:103, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); Economy random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Boots of Hermes", slot:"Boots", rarity:"legendary", atk:10, def:8, hp:94, bsp:5, bst:"March Speed", theme:"economy", affixes:"+5% March Speed base; March Speed + Gather Speed (guar.); Economy pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Dragonscale Armor", slot:"Armor", rarity:"legendary", atk:2, def:18, hp:122, bsp:null, bst:null, theme:"dungeon", affixes:"Army Def + Dungeon Dmg Reduction 3–6% (guar.); Titanbreaker set", source:"Weekly Boss Lv 18–25 (rare rate)"},
+    {name:"Warden's Aegis", slot:"Armor", rarity:"legendary", atk:6, def:19, hp:103, bsp:2, bst:"PvP Def", theme:"pvp-def", affixes:"+2% PvP Def base; 4-slot PvP Defense pool; Warden's Vigil set", source:"PvP Defense (TH18+, Core only)"},
+    {name:"Deathless Warplate", slot:"Armor", rarity:"legendary", atk:9, def:18, hp:97, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Infantry ATK (guar.); Offense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Ring of the Tyrant", slot:"Ring", rarity:"legendary", atk:29, def:6, hp:25, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Cav ATK (guar.); Offense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Stormcharge Sabatons", slot:"Boots", rarity:"legendary", atk:14, def:7, hp:80, bsp:5, bst:"March Speed", theme:"offense", affixes:"+5% March Speed base; Army ATK + Cav ATK (guar.); Offense pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Warcrown of Ash", slot:"Helm", rarity:"legendary", atk:17, def:13, hp:73, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Archer ATK (guar.); rolls Cavalry Attack in random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Immortal Aegis", slot:"Armor", rarity:"legendary", atk:3, def:20, hp:109, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Infantry Def (guar.); Army Defense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Immovable Sabatons", slot:"Boots", rarity:"legendary", atk:5, def:9, hp:108, bsp:5, bst:"March Speed", theme:"defense", affixes:"+5% March Speed base; Army Def + Cav Def (guar.); Army Defense pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Warden's Greathelm", slot:"Helm", rarity:"legendary", atk:12, def:15, hp:86, bsp:2, bst:"PvP Def", theme:"pvp-def", affixes:"+2% PvP Def base; 4-slot PvP Defense pool; Warden's Vigil set", source:"PvP Defense (TH18+, Core only)"},
+    {name:"Juggernaut Plate", slot:"Armor", rarity:"legendary", atk:2, def:21, hp:110, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Infantry Def + Wall Health (guar.); –2% March Speed penalty", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Ring of Power", slot:"Ring", rarity:"legendary", atk:19, def:10, hp:43, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); Economy random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Heart of Ruin", slot:"Accessory", rarity:"legendary", atk:27, def:5, hp:45, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Archer ATK (guar.); Offense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Sovereign's Diadem", slot:"Helm", rarity:"legendary", atk:12, def:15, hp:86, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); Economy random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Conqueror's Fang", slot:"Weapon", rarity:"legendary", atk:32, def:4, hp:34, bsp:2, bst:"PvP ATK", theme:"pvp-off", affixes:"+2% PvP ATK base; 4-slot PvP Offense pool; Conqueror's Regalia set", source:"PvP Offense (TH18+, Core only)"},
+    {name:"Bloodreaver", slot:"Weapon", rarity:"legendary", atk:42, def:1, hp:9, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Infantry ATK (guar.); Offense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Kingsward", slot:"Weapon", rarity:"legendary", atk:22, def:7, hp:60, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Infantry Def (guar.); Army Defense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Titan Cleaver", slot:"Weapon", rarity:"legendary", atk:34, def:2, hp:32, bsp:null, bst:null, theme:"dungeon", affixes:"Army ATK + Dungeon Damage 3–6% (guar.); Titanbreaker set; Dungeon Delving pool", source:"Weekly Boss Lv 18–25 (rare rate)"},
+    {name:"King's Musterblade", slot:"Weapon", rarity:"legendary", atk:32, def:4, hp:34, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Wood Gathering (guar.); Economy random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+    {name:"Aegis Crown", slot:"Helm", rarity:"legendary", atk:6, def:18, hp:98, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Archer Def (guar.); Army Defense random pool", source:"Monster Den 18–25 · Dungeon · Weekly Boss"},
+
+    {name:"Warden's Bulwark", slot:"Accessory", rarity:"epic", atk:16, def:7, hp:49, bsp:1, bst:"PvP Def", theme:"pvp-def", affixes:"+1% PvP Def base; 3-slot PvP Defense pool; Warden's Vigil set", source:"PvP Defense (TH10+)"},
+    {name:"Voidshield Shard", slot:"Accessory", rarity:"epic", atk:8, def:10, hp:69, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Archer Def (guar.); 1 random Army Defense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Tactician's Ring", slot:"Ring", rarity:"epic", atk:22, def:12, hp:0, bsp:null, bst:null, theme:"offense", affixes:"March Speed + March Capacity (guar.); 1 random Command slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Sigil of Immolation", slot:"Ring", rarity:"epic", atk:26, def:5, hp:17, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Cav ATK (guar.); 1 random Offense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Scavenger's Charm", slot:"Accessory", rarity:"epic", atk:4, def:2, hp:100, bsp:null, bst:null, theme:"economy", affixes:"Wood Gathering + Gathering Yield (guar.); 1 random Economy slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Ironoath Signet", slot:"Ring", rarity:"epic", atk:0, def:21, hp:45, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Garrison Defense 2.2–4.5% while stationed (guar.); Fortification random pool", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Merchant's Voidstone", slot:"Accessory", rarity:"epic", atk:16, def:7, hp:49, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); 1 random Economy slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Sigil of Sanctuary", slot:"Ring", rarity:"epic", atk:9, def:14, hp:45, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Cav Def (guar.); 1 random Army Defense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Conqueror's Pendant", slot:"Accessory", rarity:"epic", atk:16, def:7, hp:49, bsp:1, bst:"PvP ATK", theme:"pvp-off", affixes:"+1% PvP ATK base; 3-slot PvP Offense pool; Conqueror's Regalia set", source:"PvP Offense (TH10+)"},
+    {name:"Warden's Greaves", slot:"Boots", rarity:"epic", atk:9, def:7, hp:68, bsp:1, bst:"PvP Def", theme:"pvp-def", affixes:"+1% PvP Def base; 3-slot PvP Defense pool; Warden's Vigil set", source:"PvP Defense (TH10+)"},
+    {name:"Warden's Band", slot:"Ring", rarity:"epic", atk:17, def:9, hp:31, bsp:1, bst:"PvP Def", theme:"pvp-def", affixes:"+1% PvP Def base; 3-slot PvP Defense pool; Warden's Vigil set", source:"PvP Defense (TH10+)"},
+    {name:"Voidfang Shard", slot:"Accessory", rarity:"epic", atk:25, def:4, hp:30, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Archer ATK (guar.); 1 random Offense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Arcane Sigil", slot:"Ring", rarity:"epic", atk:17, def:9, hp:31, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); 1 random Economy slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Scoutmaster's Treads", slot:"Boots", rarity:"epic", atk:9, def:7, hp:68, bsp:4, bst:"March Speed", theme:"economy", affixes:"+4% March Speed base; March Speed + Gather Speed (guar.); Economy pool", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Phantom Greaves", slot:"Boots", rarity:"epic", atk:4, def:10, hp:73, bsp:10, bst:"March Speed", theme:"dungeon", affixes:"+10% March Speed base; Army Def + Dungeon Dmg Reduction 2.2–4.5% (guar.); Shadow of the Crypt set", source:"Daily Dungeon (Lv 12–25)"},
+    {name:"Nightlunge Boots", slot:"Boots", rarity:"epic", atk:13, def:6, hp:56, bsp:4, bst:"March Speed", theme:"offense", affixes:"Army ATK + Cav ATK (guar.); +4% March Speed base; 1 random Offense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Crypt Warden's Plate", slot:"Armor", rarity:"epic", atk:2, def:16, hp:96, bsp:null, bst:null, theme:"dungeon", affixes:"Army Def + Dungeon Dmg Reduction 2.2–4.5% (guar.); Shadow of the Crypt set; Dungeon Warding pool", source:"Daily Dungeon (Lv 12–25)"},
+    {name:"Earthshaker Boots", slot:"Boots", rarity:"epic", atk:4, def:9, hp:76, bsp:12, bst:"March Speed", theme:"dungeon", affixes:"+12% March Speed base; Army ATK + Dungeon Damage 2.2–4.5% (guar.); Titanbreaker set", source:"Weekly Boss Lv 12–25"},
+    {name:"Vanguard Cuirass", slot:"Armor", rarity:"epic", atk:8, def:16, hp:69, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Infantry ATK (guar.); 1 random Offense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Conqueror's Stalkers", slot:"Boots", rarity:"epic", atk:9, def:7, hp:68, bsp:4, bst:"March Speed", theme:"pvp-off", affixes:"+4% March Speed base; +1% PvP ATK base; 3-slot PvP Offense; Conqueror's Regalia set", source:"PvP Offense (TH10+)"},
+    {name:"Duskwarden Boots", slot:"Boots", rarity:"epic", atk:4, def:8, hp:79, bsp:4, bst:"March Speed", theme:"defense", affixes:"+4% March Speed base; Army Def + Cav Def (guar.); 1 random Army Defense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Quartermaster's Harness", slot:"Armor", rarity:"epic", atk:5, def:18, hp:74, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); 1 random Economy slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Ironwall Boots", slot:"Boots", rarity:"epic", atk:4, def:10, hp:72, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Garrison Defense 1.5–3.0% while stationed; –2% March Speed penalty", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Conqueror's Shroud", slot:"Armor", rarity:"epic", atk:5, def:18, hp:74, bsp:1, bst:"PvP ATK", theme:"pvp-off", affixes:"+1% PvP ATK base; 3-slot PvP Offense; Conqueror's Regalia set", source:"PvP Offense (TH10+)"},
+    {name:"Shardfury Warhelm", slot:"Helm", rarity:"epic", atk:16, def:12, hp:52, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Archer ATK (guar.); 1 random Offense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"World Ender's Crown", slot:"Helm", rarity:"epic", atk:13, def:10, hp:71, bsp:null, bst:null, theme:"dungeon", affixes:"Army ATK + Dungeon Damage 2.2–4.5% (guar.); Titanbreaker set; Dungeon Delving pool", source:"Weekly Boss Lv 12–25"},
+    {name:"Crystal Bastion Helm", slot:"Helm", rarity:"epic", atk:5, def:16, hp:72, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Archer Def (guar.); 1 random Army Defense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Fortress Shield Helm", slot:"Helm", rarity:"epic", atk:0, def:22, hp:67, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Garrison Defense 1.5–3.0% while stationed; Fortification pool", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Lifeguard Plate", slot:"Armor", rarity:"epic", atk:3, def:19, hp:79, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Infantry Def (guar.); 1 random Army Defense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Prospector's Warcrown", slot:"Helm", rarity:"epic", atk:10, def:14, hp:62, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Gather Speed (guar.); 1 random Economy slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Master Miner's Helm", slot:"Helm", rarity:"epic", atk:9, def:12, hp:53, bsp:4, bst:"Stone Gathering", theme:"economy", affixes:"+4% Stone Gathering base; Gather Speed + Stone + Gold (guar.); Prospector's Kit set (3pc Gather Speed +4/6%)", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Wyrmreaver", slot:"Weapon", rarity:"epic", atk:36, def:1, hp:6, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + Infantry ATK (guar.); 1 random Offense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Conqueror's Cowl", slot:"Helm", rarity:"epic", atk:10, def:14, hp:62, bsp:1, bst:"PvP ATK", theme:"pvp-off", affixes:"+1% PvP ATK base; 3-slot PvP Offense; Conqueror's Regalia set", source:"PvP Offense (TH10+)"},
+    {name:"Warden's Wardsword", slot:"Weapon", rarity:"epic", atk:28, def:4, hp:25, bsp:1, bst:"PvP Def", theme:"pvp-def", affixes:"+1% PvP Def base; 3-slot PvP Defense; Warden's Vigil set", source:"PvP Defense (TH10+)"},
+    {name:"Scalewarden Blade", slot:"Weapon", rarity:"epic", atk:21, def:6, hp:43, bsp:null, bst:null, theme:"defense", affixes:"Army Def + Infantry Def (guar.); 1 random Army Defense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Berserker's Greatsword", slot:"Weapon", rarity:"epic", atk:33, def:0, hp:24, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + First Round Damage 2.2–4.5% (guar.); 1 random Offense slot", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+    {name:"Campaigner's Greatblade", slot:"Weapon", rarity:"epic", atk:28, def:4, hp:25, bsp:null, bst:null, theme:"economy", affixes:"March Speed + Wood Gathering (guar.); Economy pool", source:"Monster Den 12–25 · Dungeon · Weekly Boss"},
+
+    {name:"Talisman of Slaughter", slot:"Accessory", rarity:"rare", atk:15, def:4, hp:28, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Glass Cannon Ring", slot:"Ring", rarity:"rare", atk:19, def:2, hp:15, bsp:null, bst:null, theme:"offense", affixes:"Army ATK + First Round Damage 1.0–2.0% (guar.); no random slots", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Talisman of Sanctuary", slot:"Accessory", rarity:"rare", atk:5, def:7, hp:53, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Signet Ring", slot:"Ring", rarity:"rare", atk:10, def:7, hp:25, bsp:null, bst:null, theme:"economy", affixes:"Gather Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Wanderer's Boots", slot:"Boots", rarity:"rare", atk:3, def:5, hp:65, bsp:15, bst:"March Speed", theme:"economy", affixes:"+15% March Speed base; March Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Signet of Raised Shield", slot:"Ring", rarity:"rare", atk:5, def:9, hp:35, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Swiftstriders", slot:"Boots", rarity:"rare", atk:5, def:5, hp:56, bsp:3, bst:"March Speed", theme:"economy", affixes:"+3% March Speed base; March Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Stalker Boots", slot:"Boots", rarity:"rare", atk:3, def:7, hp:58, bsp:6, bst:"March Speed", theme:"offense", affixes:"+6% March Speed base; Monster Damage + March Speed (guar.); Beastlord's Hunt set (Monster Dens)", source:"Monster Den 8–25"},
+    {name:"Bloodstriders", slot:"Boots", rarity:"rare", atk:8, def:5, hp:49, bsp:3, bst:"March Speed", theme:"offense", affixes:"+3% March Speed base; Army ATK (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Stonestriders", slot:"Boots", rarity:"rare", atk:3, def:6, hp:63, bsp:3, bst:"March Speed", theme:"defense", affixes:"+3% March Speed base; Army Def (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Gold Talisman", slot:"Accessory", rarity:"rare", atk:10, def:5, hp:41, bsp:null, bst:null, theme:"economy", affixes:"Gather Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Signet of Bloodied Hand", slot:"Ring", rarity:"rare", atk:16, def:4, hp:16, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Stonewall Plate", slot:"Armor", rarity:"rare", atk:2, def:14, hp:64, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Breachplate", slot:"Armor", rarity:"rare", atk:5, def:12, hp:58, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Vitality Crown", slot:"Helm", rarity:"rare", atk:0, def:0, hp:126, bsp:null, bst:null, theme:"defense", affixes:"Army Health + Healing Speed 0.6–1.3% while stationed (guar.); no random slots", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Wraith Helm", slot:"Helm", rarity:"rare", atk:8, def:8, hp:58, bsp:null, bst:null, theme:"dungeon", affixes:"Army ATK + Dungeon Damage 1.5–3.0% (guar.); Shadow of the Crypt set", source:"Daily Dungeon 8–25"},
+    {name:"Plate Armor", slot:"Armor", rarity:"rare", atk:3, def:13, hp:61, bsp:null, bst:null, theme:"economy", affixes:"Gather Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Onslaught Helm", slot:"Helm", rarity:"rare", atk:9, def:9, hp:45, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Knight's Helm", slot:"Helm", rarity:"rare", atk:6, def:10, hp:51, bsp:null, bst:null, theme:"economy", affixes:"March Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Shadowsteel Blade", slot:"Weapon", rarity:"rare", atk:18, def:1, hp:22, bsp:null, bst:null, theme:"dungeon", affixes:"Army ATK + Dungeon Damage 1.5–3.0% (guar.); Shadow of the Crypt set — SET COMPLETE (4/4)", source:"Daily Dungeon 8–25"},
+    {name:"Sentinel Helm", slot:"Helm", rarity:"rare", atk:3, def:12, hp:57, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Pathfinder's Blade", slot:"Weapon", rarity:"rare", atk:15, def:2, hp:30, bsp:8, bst:"March Speed", theme:"economy", affixes:"+8% March Speed base; March Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Harvest Sickle", slot:"Weapon", rarity:"rare", atk:15, def:2, hp:17, bsp:3, bst:"Food Gathering", theme:"economy", affixes:"+3% Food Gathering base; Gather Speed + Food Gathering (guar.); no random slots", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Knight's Longsword", slot:"Weapon", rarity:"rare", atk:17, def:3, hp:20, bsp:null, bst:null, theme:"economy", affixes:"March Speed (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Oathkeeper Longsword", slot:"Weapon", rarity:"rare", atk:11, def:5, hp:36, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+    {name:"Lancebreaker", slot:"Weapon", rarity:"rare", atk:23, def:1, hp:5, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); 1 random Any Bonus slot", source:"Monster Den 8–20 · Dungeon · Weekly Boss"},
+
+    {name:"Silver Slayer's Band", slot:"Ring", rarity:"uncommon", atk:10, def:4, hp:13, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); no random slots; scales Lv31", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Silver Band", slot:"Ring", rarity:"uncommon", atk:6, def:5, hp:19, bsp:null, bst:null, theme:"economy", affixes:"Gather Speed (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Silver Sentinel Band", slot:"Ring", rarity:"uncommon", atk:3, def:7, hp:25, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Verdant Warcharm", slot:"Accessory", rarity:"uncommon", atk:9, def:3, hp:23, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Verdant Guardstone", slot:"Accessory", rarity:"uncommon", atk:3, def:5, hp:38, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Plated Greaves", slot:"Boots", rarity:"uncommon", atk:3, def:4, hp:42, bsp:2, bst:"March Speed", theme:"economy", affixes:"+2% March Speed base; March Speed (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Emerald Pendant", slot:"Accessory", rarity:"uncommon", atk:6, def:4, hp:30, bsp:null, bst:null, theme:"economy", affixes:"Gather Speed (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Onrush Greaves", slot:"Boots", rarity:"uncommon", atk:5, def:3, hp:37, bsp:2, bst:"March Speed", theme:"offense", affixes:"+2% March Speed base; Army ATK (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Merchant's Pouch", slot:"Accessory", rarity:"uncommon", atk:5, def:3, hp:26, bsp:2, bst:"Gold Gathering", theme:"economy", affixes:"+2% Gold Gathering base; Gold Gathering (guar.); Prospector's Kit set 2/3", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Holdfast Greaves", slot:"Boots", rarity:"uncommon", atk:2, def:4, hp:46, bsp:2, bst:"March Speed", theme:"defense", affixes:"+2% March Speed base; Army Def (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Wolfhide Vest", slot:"Armor", rarity:"uncommon", atk:1, def:8, hp:58, bsp:null, bst:null, theme:"offense", affixes:"Monster Damage Reduction 0.9–1.8% (guar.); Beastlord's Hunt set 2/4", source:"Monster Den 1–15"},
+    {name:"Reaver's Maille", slot:"Armor", rarity:"uncommon", atk:3, def:9, hp:44, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Ringwall Hauberk", slot:"Armor", rarity:"uncommon", atk:1, def:10, hp:47, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Chainmail", slot:"Armor", rarity:"uncommon", atk:2, def:10, hp:46, bsp:null, bst:null, theme:"economy", affixes:"Gather Speed (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Forager's Cuirass", slot:"Armor", rarity:"uncommon", atk:1, def:8, hp:57, bsp:5, bst:"Gather Speed", theme:"economy", affixes:"+5% Gather Speed base; Gathering Yield (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Chainmail Hood", slot:"Helm", rarity:"uncommon", atk:4, def:8, hp:38, bsp:null, bst:null, theme:"economy", affixes:"March Speed (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Bloodhood Coif", slot:"Helm", rarity:"uncommon", atk:6, def:7, hp:34, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Coif of the Steadfast", slot:"Helm", rarity:"uncommon", atk:2, def:9, hp:42, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Steel Blade", slot:"Weapon", rarity:"uncommon", atk:11, def:2, hp:15, bsp:null, bst:null, theme:"economy", affixes:"March Speed (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Shrikeblade", slot:"Weapon", rarity:"uncommon", atk:15, def:0, hp:4, bsp:null, bst:null, theme:"offense", affixes:"Army ATK (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Bulwark Falchion", slot:"Weapon", rarity:"uncommon", atk:6, def:3, hp:27, bsp:null, bst:null, theme:"defense", affixes:"Army Def (guar.); no random slots", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+    {name:"Beastfang Dagger", slot:"Weapon", rarity:"uncommon", atk:11, def:1, hp:19, bsp:null, bst:null, theme:"offense", affixes:"Monster Damage 0.9–1.8% (guar.); Beastlord's Hunt set 3/4", source:"Monster Den 1–15"},
+    {name:"Miner's Pick", slot:"Weapon", rarity:"uncommon", atk:9, def:2, hp:13, bsp:2, bst:"Stone Gathering", theme:"economy", affixes:"+2% Stone Gathering base; Stone Gathering (guar.); Prospector's Kit set — SET COMPLETE (3/3)", source:"Monster Den 5–15 · Dungeon · Weekly Boss"},
+
+    {name:"Iron Fang Ring", slot:"Ring", rarity:"common", atk:5, def:2, hp:6, bsp:null, bst:null, theme:"offense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Iron Ring", slot:"Ring", rarity:"common", atk:3, def:3, hp:8, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Iron Ward Ring", slot:"Ring", rarity:"common", atk:2, def:3, hp:11, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Farmer's Gloves", slot:"Accessory", rarity:"common", atk:3, def:2, hp:11, bsp:1, bst:"Food Gathering", theme:"economy", affixes:"+1% Food Gathering base; no other affixes; scales Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Copper Wardcharm", slot:"Accessory", rarity:"common", atk:2, def:2, hp:17, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Copper Fangcharm", slot:"Accessory", rarity:"common", atk:5, def:1, hp:10, bsp:null, bst:null, theme:"offense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Copper Amulet", slot:"Accessory", rarity:"common", atk:3, def:2, hp:13, bsp:null, bst:null, theme:"economy", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Charger's Casque", slot:"Helm", rarity:"common", atk:3, def:3, hp:15, bsp:null, bst:null, theme:"offense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Bulwark Visor", slot:"Helm", rarity:"common", atk:1, def:4, hp:19, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Iron Helm", slot:"Helm", rarity:"common", atk:2, def:4, hp:17, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Tracker's Hood", slot:"Helm", rarity:"common", atk:2, def:3, hp:23, bsp:null, bst:null, theme:"offense", affixes:"Monster Damage +1.0% base; Beastlord's Hunt set — SET COMPLETE (4/4)", source:"Monster Den 1–15"},
+    {name:"Hidebound Cuirass", slot:"Armor", rarity:"common", atk:1, def:5, hp:21, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Raider's Jerkin", slot:"Armor", rarity:"common", atk:2, def:4, hp:19, bsp:null, bst:null, theme:"offense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Leather Armor", slot:"Armor", rarity:"common", atk:1, def:5, hp:20, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Iron Sword", slot:"Weapon", rarity:"common", atk:6, def:1, hp:7, bsp:null, bst:null, theme:"offense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Rivenedge", slot:"Weapon", rarity:"common", atk:8, def:0, hp:2, bsp:null, bst:null, theme:"offense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Wardbrand", slot:"Weapon", rarity:"common", atk:3, def:2, hp:12, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Woodsman's Axe", slot:"Weapon", rarity:"common", atk:5, def:1, hp:6, bsp:1, bst:"Wood Gathering", theme:"economy", affixes:"Wood Gathering +1.0% base; no other affixes; scales Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Anchorstep Boots", slot:"Boots", rarity:"common", atk:1, def:2, hp:21, bsp:null, bst:null, theme:"defense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Leather Boots", slot:"Boots", rarity:"common", atk:2, def:2, hp:18, bsp:null, bst:null, theme:"economy", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"},
+    {name:"Skirmisher's Boots", slot:"Boots", rarity:"common", atk:3, def:2, hp:16, bsp:null, bst:null, theme:"offense", affixes:"No affixes; scales to Lv 28", source:"Monster Den 1–10 · Dungeon · Weekly Boss"}
+  ];
+
+  var SETS = [
+    {name:"Beastlord's Hunt", pieces:["Stalker Boots","Wolfhide Vest","Beastfang Dagger","Tracker's Hood"], context:"Monster Dens only", thresholds:{2:"Army ATK +3%", 4:"Army ATK +6%, Army HP +6%"}},
+    {name:"Prospector's Kit", pieces:["Master Miner's Helm","Merchant's Pouch","Miner's Pick"], context:"Gathering only", thresholds:{2:"Gather Speed +4%", 3:"Gather Speed +6%"}},
+    {name:"Shadow of the Crypt", pieces:["Shadowsteel Blade","Wraith Helm","Crypt Warden's Plate","Phantom Greaves"], context:"Daily Dungeon only", thresholds:{2:"Hero DEF +3%", 4:"Hero DEF +6%, Hero HP +6%"}},
+    {name:"Titanbreaker", pieces:["Titan Cleaver","Dragonscale Armor","World Ender's Crown","Earthshaker Boots"], context:"Weekly Boss only", thresholds:{2:"Hero HP +3%", 4:"Hero HP +6%, Hero ATK +6%"}},
+    {name:"Conqueror's Regalia", pieces:["Conqueror's Fang","Conqueror's Shroud","Conqueror's Cowl","Conqueror's Pendant","Conqueror's Stalkers","Conqueror's Signet"], context:"PvP Offense", thresholds:{2:"+0.4% PvP ATK", 4:"+0.6% PvP ATK", 6:"+1.0% PvP ATK"}},
+    {name:"Warden's Vigil", pieces:["Warden's Wardsword","Warden's Aegis","Warden's Greaves","Warden's Greathelm","Warden's Band","Warden's Bulwark"], context:"PvP Defense", thresholds:{2:"+0.4% PvP DEF", 4:"+0.6% PvP DEF", 6:"+1.0% PvP DEF"}}
+  ];
+
+  // Numeric translation of SETS' thresholds into resolved_stats keys the recommender
+  // already scores (see ROLE_WEIGHTS pct maps). Only sets whose bonus stat has a clean,
+  // verified mapping are included here — Shadow of the Crypt / Titanbreaker grant "Hero"-level
+  // stats with no corresponding resolved_stats field, so they're deliberately left out rather
+  // than guessed at.
+  var SET_BONUS_TIERS = {
+    "Prospector's Kit":  { 2:{gatherSpeed:0.04}, 3:{gatherSpeed:0.06} },
+    "Beastlord's Hunt":  { 2:{attackPercent:0.03}, 4:{attackPercent:0.06, healthPercent:0.06} },
+    "Conqueror's Regalia": { 2:{pvpAttack:0.004}, 4:{pvpAttack:0.006}, 6:{pvpAttack:0.010} },
+    "Warden's Vigil":    { 2:{pvpDefense:0.004}, 4:{pvpDefense:0.006}, 6:{pvpDefense:0.010} }
+  };
+  // Which hero profiles a given set's bonus is actually relevant to — keeps e.g. a
+  // gathering hero from being nudged toward Beastlord's Hunt off a stray HP overlap.
+  var SET_BONUS_PROFILES = {
+    "Prospector's Kit": ["gathering"],
+    "Beastlord's Hunt": ["offense"],
+    "Conqueror's Regalia": ["offense"],
+    "Warden's Vigil": ["defense","support"]
+  };
+
+  var GUIDES = [
+    {
+      role:"Gathering", confidence:"verified",
+      blurb:"Non-combat role — Phase 1/2 mechanics verification doesn't change this much. Cavalry has both the fastest march and highest per-unit carry of the three troop types, making a Cavalry-led gathering force the efficient baseline independent of gear.",
+      picks:[
+        {slot:"Weapon", pick:"King's Musterblade (Legendary)", why:"March Speed + Wood Gathering guar., high raw stats", alt:"Harvest Sickle (Rare) — direct Gather Speed guar., more attainable"},
+        {slot:"Armor", pick:"Storewarden Plate (Legendary)", why:"March Speed + Gather Speed guar.", alt:"Forager's Cuirass (Uncommon) — +5% Gather Speed base"},
+        {slot:"Helm", pick:"Sovereign's Diadem (Legendary)", why:"March Speed + Gather Speed guar.", alt:"Master Miner's Helm (Epic) — Prospector's Kit piece"},
+        {slot:"Boots", pick:"Boots of Hermes (Legendary)", why:"+5% March Speed base + Gather Speed guar.", alt:"Scoutmaster's Treads (Epic)"},
+        {slot:"Ring", pick:"Ring of Power (Legendary)", why:"March Speed + Gather Speed guar.", alt:"Gold Talisman (Rare)"},
+        {slot:"Accessory", pick:"Heart of the World (Legendary)", why:"March Speed + Gather Speed guar.", alt:"Merchant's Pouch (Uncommon) — Prospector's Kit piece"}
+      ],
+      hero:{name:"Leafsong Aelindra or Gatherer Elena", why:"Gather Speed specialty is the direct match; Aelindra's higher sampled Gather Speed (+13.5% vs Elena's +8.1%) and her Requisition ability's loot/carry bonus make her the stronger pick at comparable levels."},
+      note:"Run the Prospector's Kit trio together (Master Miner's Helm + Merchant's Pouch + Miner's Pick) rather than mixing one set piece in — the 3pc +6% Gather Speed bonus is lost if split."
+    },
+    {
+      role:"Monster Den", confidence:"verified",
+      blurb:"Confirmed World-battle combat (fought via a March), so the verified Effective HP / armor curve / Damage Multiplier model applies directly. Item level caps differ by rarity (Common 28 → Legendary 40) and only flat ATK/DEF/HP scale with level — percentage affixes and set bonuses don't. That means the low-rarity Beastlord's Hunt set loses to Legendary/Epic generic-ATK gear by likely an order of magnitude on raw stats once the latter is available; it's the right pick before that, not after.",
+      picks:[
+        {slot:"Weapon", pick:"Bloodreaver (Legendary)", why:"ATK 42 — highest raw ATK in the whole item set", alt:"Beastfang Dagger (Uncommon) — Monster Damage affix, Beastlord's Hunt set piece (budget pick)"},
+        {slot:"Armor", pick:"Deathless Warplate (Legendary)", why:"Army ATK + Infantry ATK guar., strong raw ATK/DEF/HP at the Lv40 cap", alt:"Wolfhide Vest (Uncommon) — Monster Dmg Reduction; set piece (budget pick)"},
+        {slot:"Helm", pick:"Warcrown of Ash (Legendary, ungated)", why:"Army ATK + Archer ATK guar., high raw stats", alt:"Tracker's Hood (Common) — set piece, SET COMPLETE at 4/4 (budget pick)"},
+        {slot:"Boots", pick:"Stormcharge Sabatons (Legendary)", why:"Army ATK + Cav ATK guar. + March Speed, high raw stats", alt:"Stalker Boots (Rare) — Monster Damage + March Speed; set piece (budget pick)"},
+        {slot:"Ring", pick:"Ring of the Tyrant (Legendary)", why:"Army ATK + Cav ATK guar., ATK 29, ungated", alt:"Glass Cannon Ring (Rare) — Army ATK + First Round Damage"},
+        {slot:"Accessory", pick:"Heart of Ruin (Legendary)", why:"Army ATK + Archer ATK guar., ATK 27, ungated", alt:"Talisman of Slaughter (Rare) — Army ATK"}
+      ],
+      hero:{name:"Bloodreaver Kael or Warlord Marcus", why:"Match to your fielded troop type (Cavalry or Archer). Attack Bonus specialty plus a World ability that scales off the hero's own \"specialist attack\" stat compounds with high raw ATK gear."},
+      note:"Run the full Beastlord's Hunt set (Alt column) while working toward Legendary/Epic gear, or if deliberately optimizing for the set-bonus playstyle — not because it beats high-rarity gear once that's available. The set's 4pc bonus (+6% Army ATK / +6% Army HP in dens) is all-or-nothing."
+    },
+    {
+      role:"PvP Offense", confidence:"verified",
+      blurb:"The Damage Multiplier tooltip confirms \"PvP damage\" bonuses hit a final, non-diminishing multiplier on the fully-computed attack total — a different channel from Army ATK, not a competing one. Conqueror's Regalia stacking this across up to 6 slots is the single strongest lever in the whole item set, if attainable.",
+      picks:[
+        {slot:"Weapon", pick:"Conqueror's Fang (Legendary, TH18+ Core)", why:"+2% PvP ATK base; set piece", alt:"Lancebreaker (Rare) — Army ATK, ungated"},
+        {slot:"Armor", pick:"Conqueror's Shroud (Epic, TH10+)", why:"+1% PvP ATK base; set piece", alt:"Vanguard Cuirass (Epic) — Army ATK + Infantry ATK"},
+        {slot:"Helm", pick:"Conqueror's Cowl (Epic, TH10+)", why:"+1% PvP ATK base; set piece", alt:"Warcrown of Ash (Legendary, ungated) — Army ATK + Archer ATK"},
+        {slot:"Boots", pick:"Conqueror's Stalkers (Epic, TH10+)", why:"+1% PvP ATK base + March Speed; set piece", alt:"Nightlunge Boots (Epic) — Army ATK + Cav ATK + March Speed"},
+        {slot:"Ring", pick:"Glass Cannon Ring (Rare)", why:"No Conqueror ring exists — Army ATK + First Round Damage is the best ungated pick", alt:"—"},
+        {slot:"Accessory", pick:"Conqueror's Pendant (Epic, TH10+) / Signet (Legendary, TH18+ Core)", why:"+1–2% PvP ATK base; set piece", alt:"Voidfang Shard (Epic) — Army ATK + Archer ATK"}
+      ],
+      hero:{name:"Bloodreaver Kael (Cavalry) or Warlord Marcus (Archer)", why:"World ability bursts (Power Strike, Bloodlust, Rain of Arrows) scale off the hero's own raw ATK stat directly — a high flat-ATK weapon (Bloodreaver, 42 ATK base, highest in the item set) compounds with this on top of Command% and PvP ATK."},
+      note:"If Conqueror's Regalia is gated out of reach (TH18+/Core requirements on the weapon and accessory pieces), the ungated column is a fully valid fallback — just without the compounding Damage Multiplier stack."
+    },
+    {
+      role:"PvP Defense / Garrison", confidence:"reasoned",
+      blurb:"The biggest correction from the original build guide: \"Garrison Defense X% while stationed\" items feed the same weak armor curve as Army Defense (both are literally named \"Defense,\" the vocabulary split the game itself uses). HP and, if the inference below holds, PvP DEF items are the better-justified picks.",
+      picks:[
+        {slot:"Weapon", pick:"Warden's Wardsword (Epic)", why:"+1% PvP DEF base (reasoned Damage-Multiplier analog, unverified); set piece", alt:"—"},
+        {slot:"Armor", pick:"Warden's Aegis (Legendary, TH18+ Core) / Juggernaut Plate (Legendary, ungated)", why:"Aegis: +2% PvP DEF base, set piece. Juggernaut Plate: 110K HP, highest-HP armor in the set", alt:"—"},
+        {slot:"Helm", pick:"Warden's Greathelm (Legendary, TH18+ Core)", why:"+2% PvP DEF base; set piece — not Fortress Shield Helm (that's a weak Garrison Defense item)", alt:"—"},
+        {slot:"Boots", pick:"Warden's Greaves (Epic)", why:"+1% PvP DEF base; set piece", alt:"—"},
+        {slot:"Ring", pick:"Sigil of Sanctuary (Epic)", why:"No PvP-DEF ring exists in the set — acceptable Army/Cav Def filler", alt:"—"},
+        {slot:"Accessory", pick:"Heart of the Mountain (Legendary, ungated)", why:"Highest flat HP (92K) among defense-themed accessories — HP over Defense per the verified armor curve", alt:"—"}
+      ],
+      hero:{name:"Ironwall Theron, Bastion Hadrian, or Stonewall Borin", why:"All three: Defense Bonus specialty + Infantry/Archer affinity + a losses-triggered infantry DEF buff ability. The gear supplies sustained HP; the hero's ability kit supplies burst defense on top."},
+      note:"IMPORTANT CAVEAT: the PvP DEF → non-diminishing channel is a reasoned inference by analogy with PvP ATK, not directly tooltip-confirmed. If it turns out PvP DEF also just feeds the armor curve, the correct build collapses to \"stack the highest raw HP available, ignore Defense affixes entirely.\" Healer swap: if garrisoning Moonveil Seraphina, use Vitality Crown (Rare, 126K HP + Healing Speed) over a set-piece helm."
+    },
+    {
+      role:"Daily Dungeon", confidence:"provisional",
+      blurb:"Confirmed to use a SEPARATE gear loadout from World combat (the game's own Equipment screen has \"March\" vs \"Dungeon & Arena\" tabs) — but we have no battle report to verify how DEF/ATK/HP actually resolve in Instance combat. Lowest-confidence guide in this compendium.",
+      picks:[
+        {slot:"Weapon", pick:"Shadowsteel Blade (Rare)", why:"Dungeon Damage affix; set piece — SET COMPLETE at 4/4", alt:"—"},
+        {slot:"Armor", pick:"Crypt Warden's Plate (Epic)", why:"Army Def + Dungeon Dmg Reduction; set piece", alt:"—"},
+        {slot:"Helm", pick:"Wraith Helm (Rare)", why:"Dungeon Damage affix; set piece", alt:"—"},
+        {slot:"Boots", pick:"Phantom Greaves (Epic)", why:"+10% March Speed base + Dungeon Dmg Reduction; set piece", alt:"—"},
+        {slot:"Ring", pick:"Signet Ring (Rare)", why:"Gather Speed guar. + random slot (roll Dungeon Dmg Reduction if possible)", alt:"—"},
+        {slot:"Accessory", pick:"Gold Talisman (Rare)", why:"Filler — no Dungeon-flagged accessory exists in the item set", alt:"—"}
+      ],
+      hero:{name:"Unresolved", why:"If Instance combat is subtractive/hero-vs-hero as suspected, Instance-only abilities (Taunt, Counter Stance, Barkskin) become far more relevant than any World-battle kit suggests — Theron, Borin, or Aelindra would jump in priority. Not confirmed."},
+      note:"Treat this card as a placeholder more than a recommendation. The full Shadow of the Crypt set is the safest bet either way — it's explicitly Dungeon-flagged and its raw K-stats are competitive for its rarity even under a subtractive-math scenario."
+    },
+    {
+      role:"Weekly Boss", confidence:"provisional",
+      blurb:"Same uncertainty as Daily Dungeon, compounded: we don't even know if this is fought via March (World rules) or as its own Instance-style raid. The available gear is itself Dungeon-Damage-affixed, suggesting the devs link it to Dungeon mechanically.",
+      picks:[
+        {slot:"Weapon", pick:"Titan Cleaver (Legendary)", why:"Army ATK + Dungeon Damage; set piece", alt:"—"},
+        {slot:"Armor", pick:"Dragonscale Armor (Legendary)", why:"Army Def + Dungeon Dmg Reduction; set piece", alt:"—"},
+        {slot:"Helm", pick:"World Ender's Crown (Epic)", why:"Army ATK + Dungeon Damage; set piece", alt:"—"},
+        {slot:"Boots", pick:"Earthshaker Boots (Epic)", why:"+12% March Speed base + Army ATK + Dungeon Damage; set piece", alt:"—"},
+        {slot:"Ring", pick:"Ironoath Signet (Epic)", why:"Best available generic stats — no Boss-flagged ring exists", alt:"—"},
+        {slot:"Accessory", pick:"Gold Talisman (Rare)", why:"Filler", alt:"—"}
+      ],
+      hero:{name:"Unresolved", why:"Same reasoning as Daily Dungeon above — depends entirely on whether this role turns out to be World or Instance combat."},
+      note:"Lowest-confidence guide alongside Daily Dungeon. Full Titanbreaker set (4pc: Hero HP +6%, Hero ATK +6%) is the safest bet given the uncertainty."
+    }
+  ];
+
+  // ---------------------------------------------------------------
+  // ROLE SCORING ENGINE (Phase 2, section 3 — revised rubric)
+  // ---------------------------------------------------------------
+  function analyzeAffixes(item){
+    var fx = (item.affixes || "").toLowerCase();
+    var bst = (item.bst || "").toLowerCase();
+    return {
+      gatherSpeed: fx.indexOf("gather speed") !== -1 || fx.indexOf("gathering") !== -1 || bst.indexOf("gathering") !== -1,
+      marchSpeed: fx.indexOf("march speed") !== -1 || bst.indexOf("march speed") !== -1,
+      monsterDmg: fx.indexOf("monster damage") !== -1 || fx.indexOf("monster dmg reduction") !== -1,
+      dungeonDmg: fx.indexOf("dungeon damage") !== -1 || fx.indexOf("dungeon dmg reduction") !== -1,
+      pvpAtk: bst.indexOf("pvp atk") !== -1 || item.theme === "pvp-off",
+      pvpDef: bst.indexOf("pvp def") !== -1 || item.theme === "pvp-def",
+      garrisonDef: fx.indexOf("garrison defense") !== -1,
+      genericAtk: /\batk\b/.test(fx),
+      genericDef: /\bdef\b/.test(fx) && fx.indexOf("garrison defense") === -1,
+      health: fx.indexOf("health") !== -1,
+      firstRoundDmg: fx.indexOf("first round damage") !== -1
+    };
+  }
+
+  function roleScore(item, role){
+    var f = analyzeAffixes(item);
+    var s = 0;
+    if (role === "Gathering"){
+      if (f.gatherSpeed) s = 3;
+      else if (f.marchSpeed) s = 2;
+      else if (item.theme === "economy") s = 1.5;
+    } else if (role === "Monster Den"){
+      if (f.monsterDmg) s = 3;
+      else if (f.genericAtk) s = 2;
+      if (f.health) s = Math.max(s, 3);
+      if (f.firstRoundDmg) s = Math.min(3, s + 0.5);
+    } else if (role === "PvP Offense"){
+      if (f.pvpAtk) s = 3;
+      else if (f.genericAtk) s = 2;
+      if (f.firstRoundDmg) s = Math.min(3, s + 0.5);
+    } else if (role === "PvP Defense"){
+      if (f.health) s = 3;
+      else if (f.pvpDef) s = 2.5;
+      else if (f.garrisonDef || f.genericDef) s = 1;
+    } else if (role === "Daily Dungeon"){
+      if (f.dungeonDmg) s = 3;
+      else if (f.health) s = 2.5;
+      else if (f.genericAtk) s = 2;
+    } else if (role === "Weekly Boss"){
+      if (f.dungeonDmg) s = 3;
+      else if (f.health) s = 2.5;
+      else if (f.genericAtk) s = 2;
+      // First Round Damage deliberately contributes nothing here (long-grind role)
+    }
+    return Math.min(3, s);
+  }
+
+  // ---------------------------------------------------------------
+  // TAB SWITCHING
+  // ---------------------------------------------------------------
+  var tabNav = document.getElementById('tabNav');
+  var panels = {
+    reference: document.getElementById('panel-reference'),
+    guides: document.getElementById('panel-guides'),
+    builder: document.getElementById('panel-builder'),
+    roster: document.getElementById('panel-roster')
+  };
+  tabNav.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('.tab-btn') : null;
+    if (!btn) return;
+    var tab = btn.getAttribute('data-tab');
+    tabNav.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    Object.keys(panels).forEach(function(k){ panels[k].classList.remove('active'); });
+    panels[tab].classList.add('active');
+  });
+
+  // ---------------------------------------------------------------
+  // GEAR REFERENCE TAB
+  // ---------------------------------------------------------------
+  function fmtBaseStat(item){
+    if (!item.bsp || !item.bst) return "—";
+    return "+" + item.bsp + "% " + item.bst;
+  }
+
+  function roleBadges(item){
+    var html = "";
+    ROLES.forEach(function(r){
+      var sc = roleScore(item, r);
+      if (sc >= 2.5) html += '<span class="badge b3">' + r + ' ●●●</span>';
+      else if (sc >= 1.5) html += '<span class="badge b2">' + r + ' ●●</span>';
+    });
+    return html || '<span class="dim">—</span>';
+  }
+
+  function buildFilterChips(){
+    var slotContainer = document.getElementById('slotChips');
+    var roleContainer = document.getElementById('roleChips');
+
+    var slotHtml = '<div class="chip active" data-value="all">All Slots</div>';
+    SLOTS.forEach(function(s){
+      slotHtml += '<div class="chip" data-value="' + s + '">' + SLOT_ICONS[s] + '<span>' + s + '</span></div>';
+    });
+    slotContainer.innerHTML = slotHtml;
+
+    var roleHtml = '<div class="chip active" data-value="all">All Roles</div>';
+    ROLES.forEach(function(r){
+      roleHtml += '<div class="chip" data-value="' + r + '"><span>' + r + '</span></div>';
+    });
+    roleContainer.innerHTML = roleHtml;
+
+    slotContainer.addEventListener('click', function(e){
+      var chip = e.target.closest ? e.target.closest('.chip') : null;
+      if (!chip) return;
+      refState.slot = chip.getAttribute('data-value');
+      slotContainer.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      renderReference();
+    });
+    roleContainer.addEventListener('click', function(e){
+      var chip = e.target.closest ? e.target.closest('.chip') : null;
+      if (!chip) return;
+      refState.role = chip.getAttribute('data-value');
+      roleContainer.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      renderReference();
+    });
+  }
+
+  function renderItemCard(it){
+    var theme = THEME_META[it.theme];
+    var html = '<div class="item-card" style="border-top-color:var(--' + it.rarity + ')">';
+    html += '<div class="card-top"><span class="slot-icon">' + SLOT_ICONS[it.slot] + '</span>';
+    html += '<div class="card-title"><div class="item-name">' + it.name + '</div>';
+    html += '<div class="card-sub"><span class="rarity-pill ' + it.rarity + '">' + it.rarity + '</span>';
+    if (theme) html += '<span class="theme-pill" style="color:' + theme.color + ';border-color:' + theme.color + '">' + theme.label + '</span>';
+    html += '</div></div></div>';
+    html += '<div class="stat-chips">' +
+      '<div class="stat-chip"><span class="sc-label">ATK</span><span class="sc-val">' + it.atk + '</span></div>' +
+      '<div class="stat-chip"><span class="sc-label">DEF</span><span class="sc-val">' + it.def + '</span></div>' +
+      '<div class="stat-chip"><span class="sc-label">HP</span><span class="sc-val">' + it.hp + '</span></div>' +
+      '</div>';
+    if (it.bsp) html += '<div class="base-stat">' + fmtBaseStat(it) + '</div>';
+    html += '<div class="affix-text">' + it.affixes + '</div>';
+    html += '<div class="role-badges">' + roleBadges(it) + '</div>';
+    html += '</div>';
+    return html;
+  }
+
+  function renderReference(){
+    var slotFilter = refState.slot;
+    var roleFilter = refState.role;
+    var html = '<div class="icon-legend">' + SLOTS.map(function(s){
+      return '<span class="legend-item">' + SLOT_ICONS[s] + s + '</span>';
+    }).join('') + '</div>';
+    var totalMatched = 0;
+
+    RARITIES.forEach(function(rarity){
+      var items = ITEMS.filter(function(it){
+        if (it.rarity !== rarity) return false;
+        if (slotFilter !== "all" && it.slot !== slotFilter) return false;
+        if (roleFilter !== "all" && roleScore(it, roleFilter) < 1.5) return false;
+        return true;
+      });
+      if (items.length === 0) return;
+      totalMatched += items.length;
+      var expanded = refState.expanded[rarity];
+      html += '<div class="tier-header ' + rarity + (expanded ? '' : ' collapsed') + '" data-rarity="' + rarity + '">' +
+        '<span>' + rarity + ' (' + items.length + ')</span><span class="chevron">▾</span></div>';
+      if (expanded){
+        html += '<div class="card-grid">';
+        items.forEach(function(it){ html += renderItemCard(it); });
+        html += '</div>';
+      }
+    });
+    if (totalMatched === 0) html += '<p class="dim">No items match the current filters.</p>';
+    document.getElementById('referenceContent').innerHTML = html;
+
+    var refContent = document.getElementById('referenceContent');
+    refContent.querySelectorAll('.tier-header').forEach(function(h){
+      h.addEventListener('click', function(){
+        var r = h.getAttribute('data-rarity');
+        refState.expanded[r] = !refState.expanded[r];
+        renderReference();
+      });
+    });
+  }
+
+  buildFilterChips();
+  renderReference();
+
+  // ---------------------------------------------------------------
+  // BUILD GUIDES TAB
+  // ---------------------------------------------------------------
+  function renderGuides(){
+    var html = '<div class="guide-grid">';
+    GUIDES.forEach(function(g){
+      html += '<div class="guide-card">';
+      html += '<h3>' + g.role + '</h3>';
+      html += '<div class="confidence ' + g.confidence + '">' + g.confidence + '</div>';
+      html += '<div class="guide-blurb">' + g.blurb + '</div>';
+      g.picks.forEach(function(p){
+        html += '<div class="pick-row"><div class="pick-slot">' + SLOT_ICONS[p.slot] + '<span>' + p.slot + '</span></div><div class="pick-body">' +
+          '<b>' + p.pick + '</b><br><span class="dim">' + p.why + '</span>';
+        if (p.alt && p.alt !== "—") html += '<div class="pick-alt">Alt: ' + p.alt + '</div>';
+        html += '</div></div>';
+      });
+      html += '<div class="hero-box"><b>Hero:</b> ' + g.hero.name + '<br><span class="dim">' + g.hero.why + '</span></div>';
+      html += '<div class="guide-note">' + g.note + '</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+    document.getElementById('guidesContent').innerHTML = html;
+  }
+  renderGuides();
+
+  // ---------------------------------------------------------------
+  // BUILD YOUR OWN TAB
+  // ---------------------------------------------------------------
+  function renderBuilder(){
+    var html = '<div class="note-box"><strong>Note:</strong> totals use the same Level 1 / 0% quality baseline stats as the reference table — useful for comparing relative item strength, not a prediction of your actual endgame numbers.</div>';
+    html += '<div class="builder-grid">';
+    SLOTS.forEach(function(slot){
+      html += '<div class="slot-picker"><label>' + SLOT_ICONS[slot] + '<span>' + slot + '</span></label><select data-slot="' + slot + '">';
+      html += '<option value="">— none —</option>';
+      ITEMS.filter(function(it){ return it.slot === slot; })
+        .sort(function(a,b){
+          var ri = RARITIES.indexOf(a.rarity) - RARITIES.indexOf(b.rarity);
+          return ri !== 0 ? ri : a.name.localeCompare(b.name);
+        })
+        .forEach(function(it){
+          html += '<option value="' + it.name + '">' + it.name + ' (' + it.rarity + ')</option>';
+        });
+      html += '</select></div>';
+    });
+    html += '</div>';
+    html += '<div id="builderResults"></div>';
+    document.getElementById('builderContent').innerHTML = html;
+
+    var builderContent = document.getElementById('builderContent');
+    builderContent.querySelectorAll('select[data-slot]').forEach(function(sel){
+      sel.addEventListener('change', updateBuilderResults);
+    });
+    updateBuilderResults();
+  }
+
+  function getSelectedItems(){
+    var builderContent = document.getElementById('builderContent');
+    var selected = [];
+    builderContent.querySelectorAll('select[data-slot]').forEach(function(sel){
+      if (!sel.value) return;
+      var item = ITEMS.filter(function(it){ return it.name === sel.value && it.slot === sel.getAttribute('data-slot'); })[0];
+      if (item) selected.push(item);
+    });
+    return selected;
+  }
+
+  function updateBuilderResults(){
+    var selected = getSelectedItems();
+    var totals = {atk:0, def:0, hp:0};
+    selected.forEach(function(it){
+      totals.atk += it.atk; totals.def += it.def; totals.hp += it.hp;
+    });
+
+    var html = '<div class="equip-preview-row">';
+    SLOTS.forEach(function(slot){
+      var it = selected.filter(function(x){ return x.slot === slot; })[0];
+      if (it){
+        html += '<div class="equip-preview" style="border-color:var(--' + it.rarity + ')">' + SLOT_ICONS[slot] + '<span>' + it.name + '</span></div>';
+      } else {
+        html += '<div class="equip-preview empty">' + SLOT_ICONS[slot] + '<span>' + slot + ' — empty</span></div>';
+      }
+    });
+    html += '</div>';
+
+    html += '<div class="totals-row">' +
+      '<div class="total-card"><div class="label">ATK</div><div class="value">' + totals.atk + '</div></div>' +
+      '<div class="total-card"><div class="label">DEF</div><div class="value">' + totals.def + '</div></div>' +
+      '<div class="total-card"><div class="label">HP</div><div class="value">' + totals.hp + '</div></div>' +
+      '<div class="total-card"><div class="label">Items equipped</div><div class="value">' + selected.length + ' / 6</div></div>' +
+      '</div>';
+
+    var selectedNames = selected.map(function(it){ return it.name; });
+    SETS.forEach(function(set){
+      var owned = set.pieces.filter(function(p){ return selectedNames.indexOf(p) !== -1; }).length;
+      if (owned < 2) return;
+      var thresholdsHit = Object.keys(set.thresholds).map(Number).filter(function(t){ return t <= owned; }).sort(function(a,b){return b-a;});
+      var bonusText = thresholdsHit.length ? set.thresholds[thresholdsHit[0]] : "";
+      html += '<div class="set-active"><b>' + set.name + '</b> (' + owned + '/' + set.pieces.length + ' equipped, ' + set.context + '): ' + bonusText + '</div>';
+    });
+
+    html += '<h3 style="color:var(--gold-bright); font-size:1rem; margin:18px 0 10px;">Role Fitness</h3>';
+    var mult = function(it){ return {legendary:1.1, epic:1.0, rare:0.82, uncommon:0.65, common:0.45}[it.rarity] || 1; };
+    ROLES.forEach(function(role){
+      var sum = 0;
+      selected.forEach(function(it){ sum += roleScore(it, role) * mult(it); });
+      var pct = Math.max(0, Math.min(100, Math.round((sum / 18) * 100)));
+      html += '<div class="fitness-bar-row">' +
+        '<div class="fitness-label">' + role + '</div>' +
+        '<div class="fitness-track"><div class="fitness-fill" style="width:' + pct + '%"></div></div>' +
+        '<div class="fitness-pct">' + pct + '%</div>' +
+        '</div>';
+    });
+
+    document.getElementById('builderContent').querySelector('#builderResults').innerHTML = html;
+  }
+
+  renderBuilder();
+
+  // ---------------------------------------------------------------
+  // MY ROSTER TAB
+  // ---------------------------------------------------------------
+  var CSV_SLOTS = ["WEAPON","ARMOR","HELM","BOOTS","RING","ACCESSORY"];
+  var SLOT_LABEL = {WEAPON:"Weapon", ARMOR:"Armor", HELM:"Helm", BOOTS:"Boots", RING:"Ring", ACCESSORY:"Accessory"};
+
+  // Known hero profiles from Phase 3 (screenshot-sourced) plus the real reassignments
+  // confirmed from the user's own inventory (2026-09-20 rebuild). Keyed by
+  // hero_definition_id from the game's own export, which is stable across re-exports.
+  // "profile" drives the gear recommender's scoring weights.
+  var HEROES = {
+    starter_gatherer:   {name:"Gatherer Elena",      specialty:"Gather Speed",  affinity:"Cavalry · Infantry", role:"Gathering", profile:"gathering"},
+    starter_warlord:    {name:"Warlord Marcus",       specialty:"Attack Bonus",  affinity:"Archer · Infantry",  role:"PvP Offense / Monster Den (Archer)", profile:"offense"},
+    garrison_theron:    {name:"Ironwall Theron",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"War-reinforcement standby / PvP Defense", profile:"defense"},
+    healer_rare:        {name:"Moonveil Seraphina",   specialty:"Healing Speed", affinity:"Archer · Infantry",  role:"Garrison support / healer", profile:"support"},
+    raider_common:      {name:"Swiftarrow Lyris",     specialty:"March Speed",   affinity:"Archer · Cavalry",   role:"PvP Offense / Monster Den (sustained, Archer)", profile:"offense"},
+    harvester_uncommon: {name:"Leafsong Aelindra",    specialty:"Gather Speed",  affinity:"Cavalry · Archer",   role:"Gathering", profile:"gathering"},
+    guardian_common:    {name:"Stonewall Borin",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Gathering (reassigned — Hadrian covers the garrison)", profile:"gathering"},
+    bloodreaver_epic:   {name:"Bloodreaver Kael",     specialty:"Attack Bonus",  affinity:"Cavalry · Infantry", role:"PvP Offense / Monster Den (Cavalry) + Dungeon/WB & Arena DPS", profile:"offense"},
+    commander_rare:     {name:"Battlehorn Cassian",   specialty:"Leadership",    affinity:"Archer · Infantry",  role:"Gathering (reassigned — no confirmed active combat slot)", profile:"gathering"},
+    bastion_epic:       {name:"Bastion Hadrian",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Garrison (sole defender) + Dungeon/WB & Arena tank", profile:"defense"},
+    warlord_rare:       {name:"Ironheart Roderic",    specialty:"Attack Bonus",  affinity:"Infantry · Cavalry", role:"PvP Offense (Infantry)", profile:"offense"},
+    taskmaster_epic:    {name:"Forgefist Durgan",     specialty:"Training Speed",affinity:"Infantry · Cavalry", role:"Gathering (March) + Arena Shatter-enabler (Instanced)", profile:"gathering"},
+    deadeye_epic:       {name:"Deadeye Kestrel",      specialty:"Attack Bonus",  affinity:"Archer · Cavalry",   role:"PvP Offense / Monster Den (Archer burst)", profile:"offense"}
+  };
+
+  // Heroes whose specialty only functions while garrisoned (stationed home, not out on a
+  // march) — a real tradeoff the priority list itself can't show, since it just reflects gear
+  // jobs, not whether the hero is actually standing still. Flagged inline as a reminder.
+  var GARRISON_PASSIVE_NOTES = {
+    healer_rare: "Healing Speed only benefits troops while Seraphina is garrisoned — sending her out or benching her loses this for whoever's defending.",
+    taskmaster_epic: "Training Speed only applies while Durgan is garrisoned — while he's out gathering (on a march) this passive isn't active, so gathering and the training-speed boost are mutually exclusive for him."
+  };
+
+  var STAT_LABEL = {
+    gatherSpeed:"Gather Speed", gatherSpeedFood:"Food Gathering", gatherSpeedWood:"Wood Gathering",
+    gatherSpeedStone:"Stone Gathering", gatherSpeedGold:"Gold Gathering", nodeYield:"Gathering Yield",
+    marchSpeed:"March Speed", marchCapacity:"March Capacity", healthPercent:"Army Health",
+    pvpAttack:"PvP Attack", pvpDamageMultiplier:"PvP Damage Multiplier", monsterDamage:"Monster Damage",
+    dungeonDamage:"Dungeon Damage", attackPercent:"Army Attack", infantryAttack:"Infantry Attack",
+    archerAttack:"Archer Attack", cavalryAttack:"Cavalry Attack", firstRoundDamage:"First Round Damage",
+    infantryHealth:"Infantry Health", archerHealth:"Archer Health", cavalryHealth:"Cavalry Health",
+    pvpDefense:"PvP Defense", monsterDamageReduction:"Monster Dmg Reduction", dungeonDamageReduction:"Dungeon Dmg Reduction",
+    wallHealth:"Wall Health", garrisonDefense:"Garrison Defense", defensePercent:"Army Defense",
+    infantryDefense:"Infantry Defense", archerDefense:"Archer Defense", cavalryDefense:"Cavalry Defense",
+    healingSpeed:"Healing Speed"
+  };
+
+  var ROLE_WEIGHTS = {
+    gathering: {
+      atk:0.05, def:0.02, hp:0.15,
+      pct:{gatherSpeed:10, gatherSpeedFood:9, gatherSpeedWood:9, gatherSpeedStone:9, gatherSpeedGold:9, nodeYield:8, marchSpeed:4, marchCapacity:3, healthPercent:2}
+    },
+    offense: {
+      atk:0.5, def:0.03, hp:0.15,
+      pct:{pvpAttack:14, pvpDamageMultiplier:12, monsterDamage:10, dungeonDamage:10, attackPercent:8, infantryAttack:6, archerAttack:6, cavalryAttack:6, firstRoundDamage:4, healthPercent:2}
+    },
+    defense: {
+      atk:0.05, def:0.05, hp:0.5,
+      pct:{healthPercent:12, infantryHealth:8, archerHealth:8, cavalryHealth:8, pvpDefense:9, monsterDamageReduction:6, dungeonDamageReduction:6, wallHealth:5, garrisonDefense:1, defensePercent:1, infantryDefense:1, archerDefense:1, cavalryDefense:1}
+    },
+    support: {
+      atk:0.1, def:0.05, hp:0.35,
+      pct:{healingSpeed:14, healthPercent:8, pvpDefense:3, gatherSpeed:2}
+    }
+  };
+
+  var PROFILE_LABEL = {gathering:"Gathering", offense:"Offense", defense:"Defence", support:"Support"};
+
+  // Single flat, editable priority list of (hero, job) loadouts — set by the user (2026-09-21),
+  // reflecting actual kit fit and war-tested lessons, not raw hero_power. Claims resolve strictly
+  // top-to-bottom across the WHOLE list (no separate per-group pools), so a hero's top-ranked job
+  // always wins a contested item over anyone ranked below, regardless of what job they're doing.
+  // A hero's FIRST entry in the list is their primary loadout (scored against their real currently-
+  // equipped gear); any LATER entry for the same hero is a reserve loadout built only from
+  // whatever bench is left, since only one loadout is ever physically worn at a time.
+  // context: "march" compares against/claims from march_item_ids (and is only blocked by
+  // OTHER heroes' march wear); "instanced" does the same against instanced_item_ids. A hero
+  // can hold genuinely different gear in each — e.g. a march helm vs a separate instanced helm —
+  // so these must never be conflated into one generic "worn" pool (that bug hid a Legendary
+  // helm from every recommendation because it was worn only in another hero's instanced slot).
+  var DEFAULT_LOADOUTS = [
+    {hero:"bloodreaver_epic",   profile:"offense",   context:"march"},
+    {hero:"deadeye_epic",       profile:"offense",   context:"march"},
+    {hero:"bastion_epic",       profile:"defense",   context:"march"},
+    {hero:"healer_rare",        profile:"defense",   context:"march"},
+    {hero:"garrison_theron",    profile:"defense",   context:"march"},
+    {hero:"warlord_rare",       profile:"offense",   context:"march"},
+    {hero:"raider_common",      profile:"offense",   context:"march"},
+    {hero:"starter_warlord",    profile:"offense",   context:"march"},
+    {hero:"harvester_uncommon", profile:"gathering", context:"march"},
+    {hero:"starter_gatherer",   profile:"gathering", context:"march"},
+    {hero:"taskmaster_epic",    profile:"gathering", context:"march"},
+    {hero:"commander_rare",     profile:"gathering", context:"march"},
+    {hero:"guardian_common",    profile:"gathering", context:"march"},
+    {hero:"commander_rare",     profile:"defense",   context:"march"},
+    {hero:"guardian_common",    profile:"defense",   context:"march"},
+    {hero:"bloodreaver_epic",   profile:"offense",   context:"instanced"},
+    {hero:"bastion_epic",       profile:"defense",   context:"instanced"},
+    {hero:"taskmaster_epic",    profile:"defense",   context:"instanced"},
+    {hero:"starter_gatherer",   profile:"defense",   context:"instanced"}
+  ];
+
+  var loadouts = [];
+  function initLoadouts(){
+    loadouts = DEFAULT_LOADOUTS.map(function(l, i){ return {id:"L" + i, hero:l.hero, profile:l.profile, context:l.context || "march"}; });
+  }
+  initLoadouts();
+  var nextLoadoutId = loadouts.length;
+
+  var rosterState = { heroes:[], equip:[], equipById:{}, error:null };
+
+  function parseCSVText(text){
+    var rows = []; var row = []; var field = ""; var inQuotes = false;
+    for (var i = 0; i < text.length; i++){
+      var c = text[i];
+      if (inQuotes){
+        if (c === '"'){
+          if (text[i+1] === '"'){ field += '"'; i++; }
+          else { inQuotes = false; }
+        } else { field += c; }
+      } else {
+        if (c === '"'){ inQuotes = true; }
+        else if (c === ','){ row.push(field); field = ""; }
+        else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; }
+        else if (c === '\r'){ /* skip */ }
+        else { field += c; }
+      }
+    }
+    if (field.length || row.length){ row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function csvToObjects(text){
+    var rows = parseCSVText(text);
+    if (rows.length < 2) return [];
+    var header = rows[0];
+    var out = [];
+    for (var r = 1; r < rows.length; r++){
+      if (rows[r].length === 1 && rows[r][0] === "") continue;
+      var obj = {};
+      for (var c = 0; c < header.length; c++) obj[header[c]] = rows[r][c] !== undefined ? rows[r][c] : "";
+      out.push(obj);
+    }
+    return out;
+  }
+
+  function safeJSON(str, fallback){
+    if (!str) return fallback;
+    try { return JSON.parse(str); } catch(e){ return fallback; }
+  }
+
+  function normName(n){
+    return (n || "").toLowerCase().replace(/^the\s+/, "").replace(/\bof the\b/, "of").replace(/\s+/g, " ").trim();
+  }
+  var ITEM_BY_NORM_NAME = {};
+  ITEMS.forEach(function(it){ ITEM_BY_NORM_NAME[normName(it.name)] = it; });
+  function lookupItemMeta(name){
+    return ITEM_BY_NORM_NAME[normName(name)] || null;
+  }
+
+  function equipStats(row){
+    var rs = safeJSON(row.resolved_stats, {});
+    return { atk: rs.attack||0, def: rs.defense||0, hp: rs.health||0 };
+  }
+  function equipTotal(row){
+    var s = equipStats(row);
+    return s.atk + s.def + s.hp;
+  }
+
+  // Flat ATK/DEF/HP scale linearly with level: stat = baseAtL0 * (1 + RATE*level) * qualityMult.
+  // Reverse-engineered from ~20 duplicate items across Common/Rare/Epic in the user's real
+  // inventory (R^2 = 0.998-1.000, rate consistent at ~6.3-6.4% regardless of rarity), then
+  // confirmed against a Legendary item's in-game "show max level" projection to within 1.5%
+  // (2026-09-21). Percentage affixes do NOT scale with level (Phase 1/2, unchanged here) —
+  // only these three flat stats do, so this projects flat stats only.
+  var LEVEL_GROWTH_RATE = 0.0634;
+  function projectToMaxLevel(value, level, maxLevel){
+    level = Number(level) || 0;
+    maxLevel = Number(maxLevel) || level;
+    if (!value || level <= 0 || maxLevel <= level) return value;
+    return value * (1 + LEVEL_GROWTH_RATE * maxLevel) / (1 + LEVEL_GROWTH_RATE * level);
+  }
+  function equipStatsAtMax(row){
+    var s = equipStats(row);
+    return {
+      atk: projectToMaxLevel(s.atk, row.level, row.max_level),
+      def: projectToMaxLevel(s.def, row.level, row.max_level),
+      hp: projectToMaxLevel(s.hp, row.level, row.max_level)
+    };
+  }
+
+  function processRosterCSV(text, errPrefix){
+    try {
+      var objects = csvToObjects(text);
+      var heroes = objects.filter(function(o){ return o.record_type === "hero"; });
+      var equip = objects.filter(function(o){ return o.record_type === "equipment"; });
+      if (heroes.length === 0 && equip.length === 0){
+        rosterState.error = "No hero or equipment rows found — is this the right export data?";
+      } else {
+        rosterState.error = null;
+      }
+      var equipById = {};
+      equip.forEach(function(row){ equipById[row.item_id] = row; });
+      rosterState.heroes = heroes;
+      rosterState.equip = equip;
+      rosterState.equipById = equipById;
+      initLoadouts();
+    } catch(err){
+      rosterState.error = (errPrefix || "Couldn't parse that: ") + err.message;
+    }
+    renderRoster();
+  }
+
+  function handleRosterFile(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      processRosterCSV(e.target.result, "Couldn't parse that file: ");
+    };
+    reader.onerror = function(){
+      rosterState.error = "Couldn't read that file.";
+      renderRoster();
+    };
+    reader.readAsText(file);
+  }
+
+  function handleRosterPaste(text){
+    if (!text || !text.trim()){
+      rosterState.error = "Paste box is empty — copy your inventory export first.";
+      renderRoster();
+      return;
+    }
+    processRosterCSV(text, "Couldn't parse that pasted data: ");
+  }
+
+  function wireRosterUploadControls(target){
+    var fileInput = target.querySelector('#rosterFileInput');
+    if (fileInput){
+      fileInput.addEventListener('change', function(e){
+        if (e.target.files && e.target.files[0]) handleRosterFile(e.target.files[0]);
+      });
+    }
+    var pasteBox = target.querySelector('#rosterPasteInput');
+    var pasteBtn = target.querySelector('#rosterPasteBtn');
+    if (pasteBtn && pasteBox){
+      pasteBtn.addEventListener('click', function(){
+        handleRosterPaste(pasteBox.value);
+      });
+    }
+    if (pasteBox){
+      pasteBox.addEventListener('paste', function(){
+        setTimeout(function(){ handleRosterPaste(pasteBox.value); }, 0);
+      });
+    }
+  }
+
+  function renderHeroLoadoutRow(row){
+    if (!row) return '<div class="hero-loadout-row empty">' + SLOT_ICONS.Weapon + '<span class="hl-name">empty slot</span></div>';
+    var s = equipStats(row);
+    var icon = SLOT_ICONS[SLOT_LABEL[row.slot]] || "";
+    return '<div class="hero-loadout-row">' + icon +
+      '<span class="hl-name">' + row.name + ' <span class="dim">(' + row.rarity.toLowerCase() + ' Lv' + row.level + ' Q' + row.quality_percent + '%)</span></span>' +
+      '<span class="hl-stats">A' + s.atk + ' D' + s.def + ' H' + s.hp + '</span></div>';
+  }
+
+  function realItemScore(row, profileKey){
+    var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
+    var stats = safeJSON(row.resolved_stats, {});
+    // Flat ATK/DEF/HP are scored at PROJECTED MAX LEVEL, not current — an under-leveled
+    // Legendary can legitimately outscore an already-maxed Epic once you account for its
+    // higher ceiling (see LEVEL_GROWTH_RATE above). Percentage affixes don't scale with
+    // level, so those stay on the item's actual current roll.
+    var maxStats = equipStatsAtMax(row);
+    var score = maxStats.atk*w.atk + maxStats.def*w.def + maxStats.hp*w.hp;
+    Object.keys(w.pct).forEach(function(key){
+      score += (stats[key]||0) * w.pct[key] * 150000;
+    });
+    return score;
+  }
+
+  function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip){
+    var target = normName(pieceName);
+    var matches = equip.filter(function(row){
+      if (row.slot !== slot) return false;
+      if (normName(row.name) !== target) return false;
+      if (currentItem && row.item_id === currentItem.item_id) return true;
+      if (wornIds[row.item_id]) return false;
+      if (claimedBenchIds[row.item_id]) return false;
+      return true;
+    });
+    return matches[0] || null;
+  }
+
+  // After the naive best-per-slot pass, check whether this hero is exactly one piece away
+  // from a verified set-bonus tier (Prospector's Kit, Beastlord's Hunt, etc.) and, if swapping
+  // in the missing set piece scores higher than the naive pick once the set bonus is counted,
+  // make that swap. Only sets in SET_BONUS_TIERS are considered — see the note there.
+  function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip){
+    var w = ROLE_WEIGHTS[profile] || ROLE_WEIGHTS.offense;
+    SETS.forEach(function(set){
+      var tiers = SET_BONUS_TIERS[set.name];
+      if (!tiers) return;
+      var relevantProfiles = SET_BONUS_PROFILES[set.name] || [];
+      if (relevantProfiles.indexOf(profile) === -1) return;
+      var tierLevels = Object.keys(tiers).map(Number).sort(function(a,b){ return a - b; });
+
+      var pieceMeta = set.pieces.map(function(pname){
+        var meta = lookupItemMeta(pname);
+        // ITEMS (reference catalog) uses Title-case slots ("Helm"); real roster rows
+        // and heroResult are keyed by CSV_SLOTS' uppercase form ("HELM") — normalize.
+        return {name: pname, slot: meta ? meta.slot.toUpperCase() : null};
+      });
+      var isOwned = function(p){
+        var r = p.slot && heroResult[p.slot] && heroResult[p.slot].item;
+        return !!(r && normName(r.name) === normName(p.name));
+      };
+      var owned = pieceMeta.filter(isOwned).length;
+
+      var nextTier = tierLevels.filter(function(t){ return t > owned; })[0];
+      if (!nextTier || nextTier - owned !== 1) return;
+
+      var achievedTier = tierLevels.filter(function(t){ return t <= owned; }).sort(function(a,b){ return b - a; })[0];
+      var achievedStats = achievedTier ? tiers[achievedTier] : {};
+      var nextStats = tiers[nextTier];
+      var deltaScore = 0;
+      Object.keys(nextStats).forEach(function(k){
+        var delta = (nextStats[k] || 0) - (achievedStats[k] || 0);
+        deltaScore += delta * (w.pct[k] || 0) * 150000;
+      });
+      if (deltaScore <= 0) return;
+
+      var missing = pieceMeta.filter(function(p){ return !isOwned(p); });
+      for (var i = 0; i < missing.length; i++){
+        var piece = missing[i];
+        if (!piece.slot) continue;
+        var currentItem = currentBySlot[piece.slot];
+        var candidate = findSetPieceCandidate(piece.name, piece.slot, wornIds, claimedBenchIds, currentItem, equip);
+        if (!candidate) continue;
+
+        var existingPick = heroResult[piece.slot] ? heroResult[piece.slot].item : null;
+        var existingScore = existingPick ? realItemScore(existingPick, profile) : 0;
+        var candidateScore = realItemScore(candidate, profile) + deltaScore;
+        if (candidateScore <= existingScore) continue;
+
+        if (existingPick && (!currentItem || existingPick.item_id !== currentItem.item_id)){
+          delete claimedBenchIds[existingPick.item_id];
+        }
+        if (!currentItem || candidate.item_id !== currentItem.item_id){
+          claimedBenchIds[candidate.item_id] = true;
+        }
+        var bonusText = Object.keys(nextStats).map(function(k){
+          return (STAT_LABEL[k] || k) + " " + Math.round(nextStats[k]*1000)/10 + "%";
+        }).join(", ");
+        heroResult[piece.slot] = {
+          item: candidate,
+          changed: !currentItem || currentItem.item_id !== candidate.item_id,
+          why: set.name + " " + nextTier + "/" + set.pieces.length + " (" + bonusText + ")"
+        };
+        break;
+      }
+    });
+  }
+
+  function topContributingStat(row, profileKey){
+    var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
+    var stats = safeJSON(row.resolved_stats, {});
+    var best = {key:null, val:0};
+    Object.keys(w.pct).forEach(function(key){
+      var c = (stats[key]||0) * w.pct[key];
+      if (c > best.val){ best = {key:key, val:c}; }
+    });
+    return best.key;
+  }
+
+  function computeRecommendations(){
+    var heroes = rosterState.heroes;
+    var equip = rosterState.equip;
+    var equipById = rosterState.equipById;
+
+    // Tracked separately: an item worn in one hero's INSTANCED slot is not "unavailable" for
+    // a MARCH recommendation elsewhere (and vice versa) — these are two independent loadouts
+    // per hero, not one merged "is this touched at all" pool.
+    var marchWornIds = {};
+    var instancedWornIds = {};
+    heroes.forEach(function(h){
+      safeJSON(h.march_item_ids, []).forEach(function(id){ marchWornIds[id] = true; });
+      safeJSON(h.instanced_item_ids, []).forEach(function(id){ instancedWornIds[id] = true; });
+    });
+    var claimedBenchIds = {};
+    var results = {};
+    var seenContexts = {};
+
+    loadouts.forEach(function(lo){
+      var h = heroes.filter(function(x){ return x.hero_definition_id === lo.hero; })[0];
+      if (!h) return;
+      var profile = lo.profile;
+      var context = lo.context === "instanced" ? "instanced" : "march";
+      var itemIdsField = context === "instanced" ? "instanced_item_ids" : "march_item_ids";
+      var wornIds = context === "instanced" ? instancedWornIds : marchWornIds;
+
+      // Only the hero's FIRST loadout in a given context (march or instanced) compares against
+      // what's actually equipped there — any later loadout for the same hero+context is a
+      // reserve kit, built purely from bench.
+      var contextKey = lo.hero + ":" + context;
+      var isPrimary = !seenContexts[contextKey];
+      seenContexts[contextKey] = true;
+
+      var currentBySlot = {};
+      if (isPrimary){
+        var currentIds = safeJSON(h[itemIdsField], []);
+        currentIds.forEach(function(id){ var r = equipById[id]; if (r) currentBySlot[r.slot] = r; });
+      }
+
+      var heroResult = {};
+      CSV_SLOTS.forEach(function(slot){
+        var currentItem = currentBySlot[slot];
+        var candidates = equip.filter(function(row){
+          if (row.slot !== slot) return false;
+          if (currentItem && row.item_id === currentItem.item_id) return true;
+          if (wornIds[row.item_id]) return false;
+          if (claimedBenchIds[row.item_id]) return false;
+          return true;
+        });
+        if (candidates.length === 0){ heroResult[slot] = null; return; }
+        candidates.sort(function(a,b){ return realItemScore(b, profile) - realItemScore(a, profile); });
+        var best = candidates[0];
+        if (!currentItem || best.item_id !== currentItem.item_id){
+          claimedBenchIds[best.item_id] = true;
+        }
+        heroResult[slot] = {
+          item: best,
+          changed: !currentItem || currentItem.item_id !== best.item_id,
+          why: topContributingStat(best, profile)
+        };
+      });
+      applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip);
+      results[lo.id] = { loadout: lo, isPrimary: isPrimary, hero: h, slots: heroResult };
+    });
+    return results;
+  }
+
+  function renderRecommender(){
+    var heroes = rosterState.heroes;
+    if (heroes.length === 0) return "";
+    var byDef = {};
+    heroes.forEach(function(h){ byDef[h.hero_definition_id] = h; });
+
+    var html = '<div class="section-heading">Gear Recommender</div>';
+    html += '<div class="note-box"><strong>How this works:</strong> one flat priority list of (hero, job) loadouts — claims resolve strictly top-to-bottom across the whole list, so a hero ranked high always wins a contested item over anyone ranked lower, whatever job they’re doing. A hero’s <em>first</em> loadout in the list is scored against their actual currently-equipped gear; any later loadout for the same hero is a reserve kit built only from whatever bench is left (since only one loadout is ever physically worn at a time). Add or remove loadouts below, drag the priority with the arrows. Flat ATK/DEF/HP are scored at each item’s <strong>projected max level</strong>, not its current level — an under-leveled Legendary can legitimately beat an already-maxed Epic once you account for its higher ceiling (verified against real level-scaling data, gold text shows the projection when it differs from current). Percentage affixes don’t scale with level, so those stay on the item’s actual current roll. Treat picks as strong candidates to sanity-check, not gospel.</div>';
+
+    html += '<div class="loadout-add-row">' +
+      '<select id="loadoutHeroSelect">' + heroes.map(function(h){
+        return '<option value="' + h.hero_definition_id + '">' + h.hero_name + '</option>';
+      }).join('') + '</select>' +
+      '<select id="loadoutProfileSelect">' + Object.keys(PROFILE_LABEL).map(function(p){
+        return '<option value="' + p + '">' + PROFILE_LABEL[p] + '</option>';
+      }).join('') + '</select>' +
+      '<select id="loadoutContextSelect"><option value="march">March</option><option value="instanced">Instanced (Arena/Dungeon)</option></select>' +
+      '<button type="button" id="loadoutAddBtn" class="btn-secondary" style="margin:0;">+ Add loadout</button>' +
+      '</div>';
+
+    html += '<div class="priority-list">';
+    loadouts.forEach(function(lo, idx){
+      var h = byDef[lo.hero];
+      if (!h) return;
+      var garrisonNote = GARRISON_PASSIVE_NOTES[lo.hero];
+      html += '<div class="priority-item" data-loadout-id="' + lo.id + '">' +
+        '<span class="rank">' + (idx+1) + '</span>' +
+        '<span class="pname">' + h.hero_name + '</span>' +
+        (garrisonNote ? '<span class="garrison-flag" title="' + garrisonNote.replace(/"/g,'&quot;') + '">🏠</span>' : '') +
+        '<span class="profile-pill profile-' + lo.profile + '">' + PROFILE_LABEL[lo.profile] + '</span>' +
+        (lo.context === "instanced" ? '<span class="dim" style="font-size:.72rem;">Instanced</span>' : '') +
+        '<span class="pmoves"><button data-dir="up" title="Move up">▴</button><button data-dir="down" title="Move down">▾</button><button data-dir="remove" title="Remove">✕</button></span>' +
+        '</div>';
+    });
+    html += '</div>';
+
+    var recs = computeRecommendations();
+    html += '<div id="recResults">' + renderRecResults(recs) + '</div>';
+    return html;
+  }
+
+  function renderRecResults(recs){
+    var html = "";
+    var seenHeroDefs = [];
+    loadouts.forEach(function(lo){
+      var r = recs[lo.id];
+      if (!r) return;
+      if (seenHeroDefs.indexOf(lo.hero) === -1) seenHeroDefs.push(lo.hero);
+    });
+
+    seenHeroDefs.forEach(function(heroDef){
+      var heroLoadouts = loadouts.filter(function(lo){ return lo.hero === heroDef && recs[lo.id]; });
+      if (!heroLoadouts.length) return;
+      var heroName = recs[heroLoadouts[0].id].hero.hero_name;
+      html += '<div class="hero-group"><div class="hero-group-name">' + heroName + '</div>';
+      heroLoadouts.forEach(function(lo){
+        var r = recs[lo.id];
+        html += '<div class="rec-card"><div class="rec-card-header"><span class="rprofile">' + PROFILE_LABEL[lo.profile] +
+          (lo.context === "instanced" ? ' · Instanced' : ' · March') +
+          '</span>' + (r.isPrimary ? '<span class="badge b2">PRIMARY</span>' : '<span class="badge b3">RESERVE</span>') + '</div>';
+        CSV_SLOTS.forEach(function(slot){
+          var entry = r.slots[slot];
+          var icon = SLOT_ICONS[SLOT_LABEL[slot]] || "";
+          if (!entry){
+            html += '<div class="rec-slot-row">' + icon + '<span class="rec-slot-name">' + SLOT_LABEL[slot] + '</span><span class="rec-empty">nothing available</span></div>';
+            return;
+          }
+          var s = equipStats(entry.item);
+          var badge = entry.changed
+            ? '<span class="badge b3">' + (r.isPrimary ? "PICK" : "RESERVE") + '</span>'
+            : '<span class="badge b2">KEEP</span>';
+          var whyLabel = entry.why ? (STAT_LABEL[entry.why] || entry.why) : null;
+          var atCap = Number(entry.item.level) >= Number(entry.item.max_level);
+          var maxS = atCap ? null : equipStatsAtMax(entry.item);
+          var projectedNote = maxS
+            ? '<span class="rec-projected">→ Lv' + entry.item.max_level + ': A' + Math.round(maxS.atk) + ' D' + Math.round(maxS.def) + ' H' + Math.round(maxS.hp) + '</span>'
+            : '';
+          html += '<div class="rec-slot-row">' + icon +
+            '<span class="rec-slot-name">' + SLOT_LABEL[slot] + '</span>' +
+            '<span class="rec-item-name">' + entry.item.name + '</span>' +
+            '<span class="dim">Lv' + entry.item.level + ' Q' + entry.item.quality_percent + '% — A' + s.atk + ' D' + s.def + ' H' + s.hp + '</span>' +
+            projectedNote +
+            badge +
+            (whyLabel ? '<span class="rec-why">best ' + whyLabel + '</span>' : '') +
+            '</div>';
+        });
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+    return html;
+  }
+
+  function renderRoster(){
+    var target = document.getElementById('rosterContent');
+    var html = '<div class="roster-upload">' +
+      '<input type="file" id="rosterFileInput" accept=".csv">' +
+      '<div class="upload-hint">Load your in-game inventory CSV export to see your actual heroes and gear — nothing leaves your browser, this all runs locally.</div>' +
+      '<div class="upload-or">— or —</div>' +
+      '<textarea id="rosterPasteInput" class="roster-paste" placeholder="Copy your inventory export in-game, then paste it here (Ctrl+V)"></textarea>' +
+      '<button type="button" id="rosterPasteBtn" class="btn-secondary">Load pasted data</button>';
+    if (rosterState.error) html += '<div class="roster-error">' + rosterState.error + '</div>';
+    html += '</div>';
+
+    if (rosterState.heroes.length === 0){
+      target.innerHTML = html;
+      wireRosterUploadControls(target);
+      return;
+    }
+
+    var heroes = rosterState.heroes;
+    var equip = rosterState.equip;
+    var equipById = rosterState.equipById;
+
+    var wornIds = {};
+    heroes.forEach(function(h){
+      ["march_item_ids","instanced_item_ids"].forEach(function(key){
+        var ids = safeJSON(h[key], []);
+        ids.forEach(function(id){ wornIds[id] = true; });
+      });
+    });
+    var unassigned = equip.filter(function(row){ return !wornIds[row.item_id]; });
+
+    html += '<div class="totals-row">' +
+      '<div class="total-card"><div class="label">Heroes</div><div class="value">' + heroes.length + '</div></div>' +
+      '<div class="total-card"><div class="label">Total Gear</div><div class="value">' + equip.length + '</div></div>' +
+      '<div class="total-card"><div class="label">Equipped</div><div class="value">' + (equip.length - unassigned.length) + '</div></div>' +
+      '<div class="total-card"><div class="label">Sitting Idle</div><div class="value">' + unassigned.length + '</div></div>' +
+      '</div>';
+
+    html += renderRecommender();
+
+    // --- Quick wins: empty slots + same-item better-copy-idle ---
+    var quickwins = [];
+    heroes.forEach(function(h){
+      var marchIds = safeJSON(h.march_item_ids, []);
+      var filledSlots = {};
+      marchIds.forEach(function(id){ var row = equipById[id]; if (row) filledSlots[row.slot] = true; });
+      CSV_SLOTS.forEach(function(slot){
+        if (!filledSlots[slot]){
+          quickwins.push({type:"empty", html:'<b>' + h.hero_name + '</b> has no ' + SLOT_LABEL[slot].toLowerCase() + ' equipped (march) — anything is an upgrade over nothing.'});
+        }
+      });
+    });
+    // duplicate-better-copy check, march loadout only
+    var wornMarch = {}; // item_id -> hero_name
+    heroes.forEach(function(h){
+      var ids = safeJSON(h.march_item_ids, []);
+      ids.forEach(function(id){ wornMarch[id] = h.hero_name; });
+    });
+    var byName = {};
+    equip.forEach(function(row){ (byName[row.name] = byName[row.name] || []).push(row); });
+    Object.keys(byName).forEach(function(name){
+      var items = byName[name];
+      var wornCopies = items.filter(function(it){ return wornMarch[it.item_id]; });
+      var benchCopies = items.filter(function(it){ return !wornIds[it.item_id]; });
+      if (!wornCopies.length || !benchCopies.length) return;
+      var worst = wornCopies.reduce(function(a,b){ return equipTotal(a) < equipTotal(b) ? a : b; });
+      var best = benchCopies.reduce(function(a,b){ return equipTotal(a) > equipTotal(b) ? a : b; });
+      if (equipTotal(best) > equipTotal(worst) * 1.15){
+        var hname = wornMarch[worst.item_id];
+        var ws = equipStats(worst), bs = equipStats(best);
+        quickwins.push({type:"upgrade", html:'<b>' + hname + '</b>’s ' + name + ' (Lv' + worst.level + ' Q' + worst.quality_percent + '%, A' + ws.atk + '/D' + ws.def + '/H' + ws.hp + ') has a better copy sitting idle: Lv' + best.level + ' Q' + best.quality_percent + '% (A' + bs.atk + '/D' + bs.def + '/H' + bs.hp + '). Same item, same affixes — safe swap.'});
+      }
+    });
+
+    html += '<div class="section-heading">Quick Wins (' + quickwins.length + ')</div>';
+    if (quickwins.length){
+      html += '<div class="quickwin-list">';
+      quickwins.forEach(function(qw){
+        html += '<div class="quickwin-item' + (qw.type==="empty" ? " warn-item" : "") + '">' + qw.html + '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<p class="dim">No empty slots or obvious duplicate upgrades found — your equipped gear looks internally consistent.</p>';
+    }
+
+    // --- Hero roster ---
+    html += '<div class="section-heading">Heroes (' + heroes.length + ')</div>';
+    html += '<div class="hero-roster-grid">';
+    heroes.forEach(function(h){
+      var profile = HEROES[h.hero_definition_id];
+      var marchIds = safeJSON(h.march_item_ids, []);
+      html += '<div class="hero-card">' +
+        '<div class="hero-card-header"><span class="hname">' + h.hero_name + '</span>' +
+        '<span class="hpower">Lv' + h.hero_level + '<br>Power ' + Number(h.hero_power).toLocaleString() + '</span></div>';
+      if (profile){
+        html += '<div class="hero-meta">' + profile.specialty + ' · ' + profile.affinity + '</div>';
+        html += '<div class="hero-role-pill">' + profile.role + '</div>';
+      } else {
+        html += '<div class="hero-meta dim">Unknown hero type (' + h.hero_definition_id + ') — not yet profiled</div>';
+      }
+      if (GARRISON_PASSIVE_NOTES[h.hero_definition_id]){
+        html += '<div class="garrison-note">🏠 ' + GARRISON_PASSIVE_NOTES[h.hero_definition_id] + '</div>';
+      }
+      html += '<div style="margin-top:10px;">';
+      CSV_SLOTS.forEach(function(slot){
+        var id = marchIds.filter(function(iid){ var r = equipById[iid]; return r && r.slot === slot; })[0];
+        html += renderHeroLoadoutRow(id ? equipById[id] : null);
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+
+    // --- Bench / unassigned inventory ---
+    html += '<div class="section-heading">Bench — Unassigned Inventory (' + unassigned.length + ')</div>';
+    var byRarity = {};
+    unassigned.forEach(function(row){ byRarity[row.rarity] = (byRarity[row.rarity]||0) + 1; });
+    ["LEGENDARY","EPIC","RARE","UNCOMMON","COMMON"].forEach(function(rar){
+      if (!byRarity[rar]) return;
+      html += '<div class="bench-rarity-row"><span class="bench-rarity-label rarity-pill ' + rar.toLowerCase() + '">' + rar.toLowerCase() + '</span>' +
+        '<span class="bench-rarity-count">' + byRarity[rar] + ' item' + (byRarity[rar]===1?'':'s') + ' doing nothing</span></div>';
+    });
+    var notable = unassigned.filter(function(row){ return row.rarity === "LEGENDARY" || row.rarity === "EPIC"; })
+      .sort(function(a,b){ return equipTotal(b) - equipTotal(a); });
+    if (notable.length){
+      html += '<div class="note-box" style="margin-top:12px;"><strong>Worth a look</strong> — these are Epic/Legendary and unassigned, but check the affix fits the hero’s actual role before swapping; raw stats alone can be misleading (e.g. a big flat-ATK weapon isn’t a real upgrade for a Gathering hero over one with a Gather Speed affix).</div>';
+      html += '<div class="card-grid">';
+      notable.forEach(function(row){
+        var meta = lookupItemMeta(row.name);
+        var s = equipStats(row);
+        var icon = SLOT_ICONS[SLOT_LABEL[row.slot]] || "";
+        html += '<div class="item-card" style="border-top-color:var(--' + row.rarity.toLowerCase() + ')">' +
+          '<div class="card-top"><span class="slot-icon">' + icon + '</span><div class="card-title">' +
+          '<div class="item-name">' + row.name + '</div><div class="card-sub"><span class="rarity-pill ' + row.rarity.toLowerCase() + '">' + row.rarity.toLowerCase() + '</span>' +
+          '<span class="dim">Lv' + row.level + ' Q' + row.quality_percent + '%</span></div></div></div>' +
+          '<div class="stat-chips"><div class="stat-chip"><span class="sc-label">ATK</span><span class="sc-val">' + s.atk + '</span></div>' +
+          '<div class="stat-chip"><span class="sc-label">DEF</span><span class="sc-val">' + s.def + '</span></div>' +
+          '<div class="stat-chip"><span class="sc-label">HP</span><span class="sc-val">' + s.hp + '</span></div></div>' +
+          (meta ? '<div class="affix-text">' + meta.affixes + '</div>' : '<div class="affix-text dim">Affix data not matched to reference catalog</div>') +
+          '</div>';
+      });
+      html += '</div>';
+    }
+
+    target.innerHTML = html;
+    wireRosterUploadControls(target);
+    var addBtn = target.querySelector('#loadoutAddBtn');
+    if (addBtn){
+      addBtn.addEventListener('click', function(){
+        var heroSel = target.querySelector('#loadoutHeroSelect');
+        var profileSel = target.querySelector('#loadoutProfileSelect');
+        var contextSel = target.querySelector('#loadoutContextSelect');
+        if (!heroSel || !profileSel || !contextSel) return;
+        loadouts.push({id:"L" + (nextLoadoutId++), hero:heroSel.value, profile:profileSel.value, context:contextSel.value});
+        renderRoster();
+      });
+    }
+    var priorityList = target.querySelector('.priority-list');
+    if (priorityList){
+      priorityList.addEventListener('click', function(e){
+        var btn = e.target.closest ? e.target.closest('button[data-dir]') : null;
+        if (!btn) return;
+        var item = btn.closest('.priority-item');
+        var loId = item.getAttribute('data-loadout-id');
+        var idx = loadouts.findIndex(function(l){ return l.id === loId; });
+        if (idx < 0) return;
+        var dir = btn.getAttribute('data-dir');
+        if (dir === 'remove'){
+          loadouts.splice(idx, 1);
+          renderRoster();
+          return;
+        }
+        var swapWith = dir === 'up' ? idx - 1 : idx + 1;
+        if (swapWith < 0 || swapWith >= loadouts.length) return;
+        var tmp = loadouts[idx];
+        loadouts[idx] = loadouts[swapWith];
+        loadouts[swapWith] = tmp;
+        renderRoster();
+      });
+    }
+  }
+
+  renderRoster();
+
+});
+</script>
+</body>
+</html>

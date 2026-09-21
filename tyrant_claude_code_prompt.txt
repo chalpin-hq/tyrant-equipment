@@ -1,0 +1,305 @@
+# TYRANT GEAR COMPENDIUM — CLAUDE CODE PROMPT
+
+## What to build
+A single self-contained HTML file (no frameworks, vanilla JS) that is a gear reference
+and build tool for the mobile strategy game Tyrant. Three tabs:
+
+1. GEAR REFERENCE — all 132 items in tables split by rarity tier (Legendary → Common).
+   Columns: Item name | Slot | ATK | DEF | HP | Base stat | Affixes | Role tags
+   Filters: by Slot, by Role (PvP Offense / PvP Defense / Gathering / Monster Den / Dungeon / Weekly Boss)
+
+2. BUILD GUIDES — 6 role cards showing a complete recommended set per role with reasoning.
+   Roles: Gathering, Monster Den, PvP Offense, PvP Defense, Daily Dungeon, Weekly Boss
+
+3. BUILD YOUR OWN — dropdown per slot (6 slots), live stat totals (ATK/DEF/HP sum),
+   and a role fitness bar chart (6 roles, 0-100%) showing how well the build serves each role.
+
+Dark game aesthetic. Mobile-friendly.
+
+---
+
+## CRITICAL: Known rendering issue
+DO NOT look up elements created via innerHTML using document.getElementById().
+Always use element.querySelector() on the parent node instead.
+getElementById can silently return null in iframe/artifact environments.
+Always init rendering inside: window.addEventListener('load', fn)
+
+---
+
+## ITEM STATS — HOW THEY WORK
+
+### ATK / DEF / HP
+- Values in the CSV are at level 1, 0% quality
+- BOTH quality AND level affect these stats
+- Quality: 0–100%, rolled once on drop, permanent
+- Level: scales up to rarity cap (Common Lv28, Uncommon Lv31, Rare Lv34, Epic Lv37, Legendary Lv40)
+- Higher quality = higher starting value before level scaling
+
+### Base stats (base_stat_pct / base_stat_type columns)
+- Some items have a % bonus built directly into the item (e.g. Wanderer's Boots +15% March Speed)
+- These ARE affected by quality roll (higher quality = higher % value)
+- These are NOT affected by level — they do not increase when you level the item
+- The value in the CSV is the 0% quality value; 100% quality will be higher (exact multiplier unknown)
+
+### Affixes (affixes column)
+- Guaranteed affixes: type is fixed, value rolls within stated range on drop
+- The range (e.g. 0.6%–1.2%) represents 0% quality → 100% quality
+- Random affix slots: both type AND value are rolled on drop
+- Common items have no affixes
+- Uncommon: 1 guaranteed affix, no random slots
+- Rare: 1 guaranteed affix, often 1 random "Any Bonus" slot
+- Epic: 1–2 guaranteed affixes, 1–4 random themed slots
+- Legendary: 1–3 guaranteed affixes, 2–4 random slots
+- A single quality roll affects ALL of the above simultaneously — it's one roll per item
+
+---
+
+## SETS
+
+| Set | Pieces | Context | 2pc bonus | 4/6pc bonus |
+|---|---|---|---|---|
+| Beastlord's Hunt (4pc) | Stalker Boots (Rare) + Wolfhide Vest (Uncommon) + Beastfang Dagger (Uncommon) + Tracker's Hood (Common) | Monster Dens only | Army ATK +3% | Army ATK +6%, Army HP +6% |
+| Prospector's Kit (3pc) | Master Miner's Helm (Epic) + Merchant's Pouch (Uncommon) + Miner's Pick (Uncommon) | Gathering only | Gather Speed +4% | Gather Speed +6% |
+| Shadow of the Crypt (4pc) | Shadowsteel Blade (Rare) + Wraith Helm (Rare) + Crypt Warden's Plate (Epic) + Phantom Greaves (Epic) | Daily Dungeon only | Hero DEF +3% | Hero DEF +6%, Hero HP +6% |
+| Titanbreaker (4pc) | Titan Cleaver (Leg) + Dragonscale Armor (Leg) + World Ender's Crown (Epic) + Earthshaker Boots (Epic) | Weekly Boss only | Hero HP +3% | Hero HP +6%, Hero ATK +6% |
+| Conqueror's Regalia (6pc) | Fang (Leg) + Shroud (Epic) + Cowl (Epic) + Pendant (Epic) + Stalkers (Epic) + Signet (Leg) | PvP Offense | +0.4% PvP ATK | 4pc +0.6%; 6pc +1.0% PvP ATK |
+| Warden's Vigil (6pc) | Wardsword (Epic) + Aegis (Leg) + Greaves (Epic) + Greathelm (Leg) + Band (Epic) + Bulwark (Epic) | PvP Defense | +0.4% PvP DEF | 4pc +0.6%; 6pc +1.0% PvP DEF |
+
+---
+
+## ROLE SCORING (for Build Your Own fitness bars)
+Score each item 0–3 per role based on affixes/theme, multiply by rarity multiplier,
+sum across all 6 slots, divide by max (18) for a percentage.
+
+Rarity multipliers: common=0.45, uncommon=0.65, rare=0.82, epic=1.0, legendary=1.1
+
+Role scoring rules:
+- PvP Offense: PvP ATK base stat or set → 3; Army ATK / First Round Damage affix → 2; general offense theme → 1.5; March Speed → 1
+- PvP Defense: PvP DEF base stat or set → 3; Garrison DEF affix → 2.5; Army DEF affix → 2; Army Health / defense theme → 1.5
+- Gathering: Gather Speed / Gathering Yield affix → 3; specific resource gathering → 2.5; March Speed on economy theme → 2; economy theme → 1.5
+- Monster Den: Monster Damage / Reduction affix or Beastlord's Hunt set → 3; Army ATK on offense non-PvP → 1
+- Dungeon: Dungeon Damage affix or Shadow of the Crypt set → 3; Dungeon Dmg Reduction / Hero HP / Hero DEF → 2.5; Titanbreaker set → 2
+- Weekly Boss: Titanbreaker set → 3; Dungeon Damage affix → 2; Hero HP / Hero ATK → 1.5
+
+---
+
+## BUILD GUIDES (recommended sets per role)
+
+### Gathering
+Weapon: Harvest Sickle (Rare) — Gather Speed + Food Gathering
+Armor: Forager's Cuirass (Uncommon) — +5% Gather Speed base + Gathering Yield
+Helm: Master Miner's Helm (Epic) — Gather Speed + Stone + Gold; Prospector's Kit set piece
+Boots: Scoutmaster's Treads (Epic) — +4% March Speed base + Gather Speed
+Ring: Gold Talisman (Rare) — Gather Speed + 1 random slot
+Accessory: Merchant's Pouch (Uncommon) — Gold Gathering; Prospector's Kit set piece
+Set note: Master Miner's Helm + Merchant's Pouch + Miner's Pick = Prospector's Kit 3pc active (+6% Gather Speed)
+
+### Monster Den
+Weapon: Beastfang Dagger (Uncommon) — Monster Damage; Beastlord's Hunt set piece
+Armor: Wolfhide Vest (Uncommon) — Monster Dmg Reduction; Beastlord's Hunt set piece
+Helm: Tracker's Hood (Common) — Monster Damage base; Beastlord's Hunt set piece
+Boots: Stalker Boots (Rare) — Monster Damage + March Speed; Beastlord's Hunt set piece
+Ring: Glass Cannon Ring (Rare) — Army ATK + First Round Damage
+Accessory: Talisman of Slaughter (Rare) — Army ATK + 1 random slot
+Set note: All 4 Beastlord's Hunt pieces = Army ATK +6%, Army HP +6% in dens
+
+### PvP Offense
+Weapon: Lancebreaker (Rare) — Army ATK + 1 random slot; highest ATK Rare weapon
+Armor: Conqueror's Shroud (Epic) — +1% PvP ATK base; Conqueror's Regalia set piece
+Helm: Conqueror's Cowl (Epic) — +1% PvP ATK base; Conqueror's Regalia set piece
+Boots: Nightlunge Boots (Epic) — Army ATK + Cav ATK + March Speed
+Ring: Glass Cannon Ring (Rare) — Army ATK + First Round Damage; highest ATK Rare ring
+Accessory: Conqueror's Pendant (Epic) — +1% PvP ATK base; Conqueror's Regalia set piece
+Set note: Shroud + Cowl + Pendant = 3/6 Conqueror's Regalia — 2pc bonus active (+0.4% PvP ATK)
+
+### PvP Defense / Garrison
+Weapon: Warden's Wardsword (Epic) — +1% PvP DEF base; Warden's Vigil set piece
+Armor: Stonewall Plate (Rare) — Army DEF + 1 random slot
+Helm: Fortress Shield Helm (Epic) — DEF +22K + Garrison DEF; best garrison helm
+Boots: Warden's Greaves (Epic) — +1% PvP DEF base; Warden's Vigil set piece
+Ring: Ironoath Signet (Epic) — Garrison DEF 2.2–4.5%; highest Garrison DEF ring
+Accessory: Talisman of Sanctuary (Rare) — Army DEF; stack with Ironoath + Ironwall Boots
+Set note: Wardsword + Warden's Greaves = 2/6 Warden's Vigil active (+0.4% PvP DEF)
+Healer note: If garrisoning Moonveil Seraphina (healing hero), use Vitality Crown (Rare) instead of Fortress Shield Helm — Healing Speed affix amplifies her specialty
+
+### Daily Dungeon
+Weapon: Shadowsteel Blade (Rare) — Dungeon Damage 1.5–3%; Shadow of the Crypt set piece
+Armor: Breachplate (Rare) — Army ATK + 1 random slot (best available until Epic dungeon armor)
+Helm: Vitality Crown (Rare) — +126K HP base; highest HP helm
+Boots: Swiftstriders (Rare) — March Speed; placeholder until Phantom Greaves (Epic, Shadow of the Crypt set)
+Ring: Signet Ring (Rare) — Gather Speed guar. + 1 random slot (roll Dungeon Dmg Reduction if possible)
+Accessory: Gold Talisman (Rare) — Gather Speed + 1 random slot
+Note: Sept 2026 patch — hero HP no longer absorbs army damage; drains at 30% of army loss rate; Dungeon Dmg Reduction directly reduces this drain rate
+
+### Weekly Boss
+Weapon: Shadowsteel Blade (Rare) — Dungeon Damage; placeholder until Titan Cleaver (Legendary, Titanbreaker set)
+Armor: Vanguard Cuirass (Epic) — Army ATK; placeholder until Dragonscale Armor (Legendary, Titanbreaker set)
+Helm: Vitality Crown (Rare) — +126K HP; placeholder until World Ender's Crown (Epic, Titanbreaker set)
+Boots: Swiftstriders (Rare) — March Speed; placeholder until Earthshaker Boots (Epic, Titanbreaker set)
+Ring: Ironoath Signet (Epic) — best available ring with useful stats
+Accessory: Gold Talisman (Rare) — best available accessory
+
+---
+
+## KEY GAME MECHANICS
+
+### Combat
+- Troop counter triangle: Infantry beats Cavalry, Cavalry beats Archers, Archers beat Infantry
+- Counter bonus: 25% damage advantage
+- Damage split: 60% of damage goes to the dominant troop type, 40% spread
+- Battle ends when one side reaches 60% losses
+- Casualty split: 90% wounded (recoverable), 10% killed permanently
+- Wall: 20% damage reduction at full HP, scales down as wall loses HP
+- Frontline: at least 60% of the smaller army each round, replenished from reserves
+
+### Heroes
+- Heroes provide Command bonuses (stat boosts to the army they lead)
+- Rarity caps on Command contribution: Common 17.15%, Uncommon 18.9%, Rare 20.7%, Epic 22.75%, Legendary 25%
+- Gear counts ABOVE this cap — fully additive, equal on all hero rarities
+- Hero HP drains at 30% of army loss rate in world battles (Sept 2026 patch)
+
+### Abilities
+- World abilities fire automatically based on a directive (Opening round / When losses run heavy / When winning / After their biggest hit / Save for late rounds / Never / Specific round)
+- Instance abilities (dungeon/arena) use charges; charges don't replenish mid-dungeon
+- Two abilities on the same directive = only ONE fires per battle — offset them
+
+### Tactics
+- Tactics have been removed from the game (as of recent patch)
+
+---
+
+## ITEMS CSV (132 items)
+
+name,slot,rarity,atk_base,def_base,hp_base,base_stat_pct,base_stat_type,theme,affixes,source
+Ring of Eternal Vigil,Ring,legendary,10,15,61,,,defense,Army Def + Cav Def (guar.); Army Defense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Heart of the Mountain,Accessory,legendary,9,10,92,,,defense,Army Def + Archer Def (guar.); Army Defense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Heart of the World,Accessory,legendary,18,8,69,,,economy,March Speed + Gather Speed (guar.); Economy random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Conqueror's Signet,Ring,legendary,19,10,43,2,PvP ATK,pvp-off,+2% PvP ATK base; 4-slot PvP Offense pool; Conqueror's Regalia set,"PvP Offense (TH18+, Core only)"
+Storewarden Plate,Armor,legendary,6,19,103,,,economy,March Speed + Gather Speed (guar.); Economy random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Boots of Hermes,Boots,legendary,10,8,94,5,March Speed,economy,+5% March Speed base; March Speed + Gather Speed (guar.); Economy pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Dragonscale Armor,Armor,legendary,2,18,122,,,dungeon,Army Def + Dungeon Dmg Reduction 3–6% (guar.); Titanbreaker set,Weekly Boss Lv 18–25 (rare rate)
+Warden's Aegis,Armor,legendary,6,19,103,2,PvP Def,pvp-def,+2% PvP Def base; 4-slot PvP Defense pool; Warden's Vigil set,"PvP Defense (TH18+, Core only)"
+Deathless Warplate,Armor,legendary,9,18,97,,,offense,Army ATK + Infantry ATK (guar.); Offense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Ring of the Tyrant,Ring,legendary,29,6,25,,,offense,Army ATK + Cav ATK (guar.); Offense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Stormcharge Sabatons,Boots,legendary,14,7,80,5,March Speed,offense,+5% March Speed base; Army ATK + Cav ATK (guar.); Offense pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Warcrown of Ash,Helm,legendary,17,13,73,,,offense,Army ATK + Archer ATK (guar.); rolls Cavalry Attack in random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Immortal Aegis,Armor,legendary,3,20,109,,,defense,Army Def + Infantry Def (guar.); Army Defense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Immovable Sabatons,Boots,legendary,5,9,108,5,March Speed,defense,+5% March Speed base; Army Def + Cav Def (guar.); Army Defense pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Warden's Greathelm,Helm,legendary,12,15,86,2,PvP Def,pvp-def,+2% PvP Def base; 4-slot PvP Defense pool; Warden's Vigil set,"PvP Defense (TH18+, Core only)"
+Juggernaut Plate,Armor,legendary,2,21,110,,,defense,Army Def + Infantry Def + Wall Health (guar.); –2% March Speed penalty,Monster Den 18–25 · Dungeon · Weekly Boss
+Ring of Power,Ring,legendary,19,10,43,,,economy,March Speed + Gather Speed (guar.); Economy random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Heart of Ruin,Accessory,legendary,27,5,45,,,offense,Army ATK + Archer ATK (guar.); Offense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Sovereign's Diadem,Helm,legendary,12,15,86,,,economy,March Speed + Gather Speed (guar.); Economy random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Conqueror's Fang,Weapon,legendary,32,4,34,2,PvP ATK,pvp-off,+2% PvP ATK base; 4-slot PvP Offense pool; Conqueror's Regalia set,"PvP Offense (TH18+, Core only)"
+Bloodreaver,Weapon,legendary,42,1,9,,,offense,Army ATK + Infantry ATK (guar.); Offense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Kingsward,Weapon,legendary,22,7,60,,,defense,Army Def + Infantry Def (guar.); Army Defense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Titan Cleaver,Weapon,legendary,34,2,32,,,dungeon,Army ATK + Dungeon Damage 3–6% (guar.); Titanbreaker set; Dungeon Delving pool,Weekly Boss Lv 18–25 (rare rate)
+King's Musterblade,Weapon,legendary,32,4,34,,,economy,March Speed + Wood Gathering (guar.); Economy random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Aegis Crown,Helm,legendary,6,18,98,,,defense,Army Def + Archer Def (guar.); Army Defense random pool,Monster Den 18–25 · Dungeon · Weekly Boss
+Warden's Bulwark,Accessory,epic,16,7,49,1,PvP Def,pvp-def,+1% PvP Def base; 3-slot PvP Defense pool; Warden's Vigil set,PvP Defense (TH10+)
+Voidshield Shard,Accessory,epic,8,10,69,,,defense,Army Def + Archer Def (guar.); 1 random Army Defense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Tactician's Ring,Ring,epic,22,12,0,,,offense,March Speed + March Capacity (guar.); 1 random Command slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Sigil of Immolation,Ring,epic,26,5,17,,,offense,Army ATK + Cav ATK (guar.); 1 random Offense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Scavenger's Charm,Accessory,epic,4,2,100,,,economy,Wood Gathering + Gathering Yield (guar.); 1 random Economy slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Ironoath Signet,Ring,epic,0,21,45,,,defense,Army Def + Garrison Defense 2.2–4.5% while stationed (guar.); Fortification random pool,Monster Den 12–25 · Dungeon · Weekly Boss
+Merchant's Voidstone,Accessory,epic,16,7,49,,,economy,March Speed + Gather Speed (guar.); 1 random Economy slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Sigil of Sanctuary,Ring,epic,9,14,45,,,defense,Army Def + Cav Def (guar.); 1 random Army Defense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Conqueror's Pendant,Accessory,epic,16,7,49,1,PvP ATK,pvp-off,+1% PvP ATK base; 3-slot PvP Offense pool; Conqueror's Regalia set,PvP Offense (TH10+)
+Warden's Greaves,Boots,epic,9,7,68,1,PvP Def,pvp-def,+1% PvP Def base; 3-slot PvP Defense pool; Warden's Vigil set,PvP Defense (TH10+)
+Warden's Band,Ring,epic,17,9,31,1,PvP Def,pvp-def,+1% PvP Def base; 3-slot PvP Defense pool; Warden's Vigil set,PvP Defense (TH10+)
+Voidfang Shard,Accessory,epic,25,4,30,,,offense,Army ATK + Archer ATK (guar.); 1 random Offense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Arcane Sigil,Ring,epic,17,9,31,,,economy,March Speed + Gather Speed (guar.); 1 random Economy slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Scoutmaster's Treads,Boots,epic,9,7,68,4,March Speed,economy,+4% March Speed base; March Speed + Gather Speed (guar.); Economy pool,Monster Den 12–25 · Dungeon · Weekly Boss
+Phantom Greaves,Boots,epic,4,10,73,10,March Speed,dungeon,+10% March Speed base; Army Def + Dungeon Dmg Reduction 2.2–4.5% (guar.); Shadow of the Crypt set,Daily Dungeon (Lv 12–25)
+Nightlunge Boots,Boots,epic,13,6,56,4,March Speed,offense,Army ATK + Cav ATK (guar.); +4% March Speed base; 1 random Offense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Crypt Warden's Plate,Armor,epic,2,16,96,,,dungeon,Army Def + Dungeon Dmg Reduction 2.2–4.5% (guar.); Shadow of the Crypt set; Dungeon Warding pool,Daily Dungeon (Lv 12–25)
+Earthshaker Boots,Boots,epic,4,9,76,12,March Speed,dungeon,+12% March Speed base; Army ATK + Dungeon Damage 2.2–4.5% (guar.); Titanbreaker set,Weekly Boss Lv 12–25
+Vanguard Cuirass,Armor,epic,8,16,69,,,offense,Army ATK + Infantry ATK (guar.); 1 random Offense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Conqueror's Stalkers,Boots,epic,9,7,68,4,March Speed,pvp-off,+4% March Speed base; +1% PvP ATK base; 3-slot PvP Offense; Conqueror's Regalia set,PvP Offense (TH10+)
+Duskwarden Boots,Boots,epic,4,8,79,4,March Speed,defense,+4% March Speed base; Army Def + Cav Def (guar.); 1 random Army Defense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Quartermaster's Harness,Armor,epic,5,18,74,,,economy,March Speed + Gather Speed (guar.); 1 random Economy slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Ironwall Boots,Boots,epic,4,10,72,,,defense,Army Def + Garrison Defense 1.5–3.0% while stationed; –2% March Speed penalty,Monster Den 12–25 · Dungeon · Weekly Boss
+Conqueror's Shroud,Armor,epic,5,18,74,1,PvP ATK,pvp-off,+1% PvP ATK base; 3-slot PvP Offense; Conqueror's Regalia set,PvP Offense (TH10+)
+Shardfury Warhelm,Helm,epic,16,12,52,,,offense,Army ATK + Archer ATK (guar.); 1 random Offense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+World Ender's Crown,Helm,epic,13,10,71,,,dungeon,Army ATK + Dungeon Damage 2.2–4.5% (guar.); Titanbreaker set; Dungeon Delving pool,Weekly Boss Lv 12–25
+Crystal Bastion Helm,Helm,epic,5,16,72,,,defense,Army Def + Archer Def (guar.); 1 random Army Defense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Fortress Shield Helm,Helm,epic,0,22,67,,,defense,Army Def + Garrison Defense 1.5–3.0% while stationed; Fortification pool,Monster Den 12–25 · Dungeon · Weekly Boss
+Lifeguard Plate,Armor,epic,3,19,79,,,defense,Army Def + Infantry Def (guar.); 1 random Army Defense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Prospector's Warcrown,Helm,epic,10,14,62,,,economy,March Speed + Gather Speed (guar.); 1 random Economy slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Master Miner's Helm,Helm,epic,9,12,53,4,Stone Gathering,economy,+4% Stone Gathering base; Gather Speed + Stone + Gold (guar.); Prospector's Kit set (3pc Gather Speed +4/6%),Monster Den 12–25 · Dungeon · Weekly Boss
+Wyrmreaver,Weapon,epic,36,1,6,,,offense,Army ATK + Infantry ATK (guar.); 1 random Offense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Conqueror's Cowl,Helm,epic,10,14,62,1,PvP ATK,pvp-off,+1% PvP ATK base; 3-slot PvP Offense; Conqueror's Regalia set,PvP Offense (TH10+)
+Warden's Wardsword,Weapon,epic,28,4,25,1,PvP Def,pvp-def,+1% PvP Def base; 3-slot PvP Defense; Warden's Vigil set,PvP Defense (TH10+)
+Scalewarden Blade,Weapon,epic,21,6,43,,,defense,Army Def + Infantry Def (guar.); 1 random Army Defense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Berserker's Greatsword,Weapon,epic,33,0,24,,,offense,Army ATK + First Round Damage 2.2–4.5% (guar.); 1 random Offense slot,Monster Den 12–25 · Dungeon · Weekly Boss
+Campaigner's Greatblade,Weapon,epic,28,4,25,,,economy,March Speed + Wood Gathering (guar.); Economy pool,Monster Den 12–25 · Dungeon · Weekly Boss
+Talisman of Slaughter,Accessory,rare,15,4,28,,,offense,Army ATK (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Glass Cannon Ring,Ring,rare,19,2,15,,,offense,Army ATK + First Round Damage 1.0–2.0% (guar.); no random slots,Monster Den 8–20 · Dungeon · Weekly Boss
+Talisman of Sanctuary,Accessory,rare,5,7,53,,,defense,Army Def (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Signet Ring,Ring,rare,10,7,25,,,economy,Gather Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Wanderer's Boots,Boots,rare,3,5,65,15,March Speed,economy,+15% March Speed base; March Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Signet of Raised Shield,Ring,rare,5,9,35,,,defense,Army Def (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Swiftstriders,Boots,rare,5,5,56,3,March Speed,economy,+3% March Speed base; March Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Stalker Boots,Boots,rare,3,7,58,6,March Speed,offense,+6% March Speed base; Monster Damage + March Speed (guar.); Beastlord's Hunt set (Monster Dens),Monster Den 8–25
+Bloodstriders,Boots,rare,8,5,49,3,March Speed,offense,+3% March Speed base; Army ATK (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Stonestriders,Boots,rare,3,6,63,3,March Speed,defense,+3% March Speed base; Army Def (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Gold Talisman,Accessory,rare,10,5,41,,,economy,Gather Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Signet of Bloodied Hand,Ring,rare,16,4,16,,,offense,Army ATK (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Stonewall Plate,Armor,rare,2,14,64,,,defense,Army Def (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Breachplate,Armor,rare,5,12,58,,,offense,Army ATK (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Vitality Crown,Helm,rare,0,0,126,,,defense,Army Health + Healing Speed 0.6–1.3% while stationed (guar.); no random slots,Monster Den 8–20 · Dungeon · Weekly Boss
+Wraith Helm,Helm,rare,8,8,58,,,dungeon,Army ATK + Dungeon Damage 1.5–3.0% (guar.); Shadow of the Crypt set,Daily Dungeon 8–25
+Plate Armor,Armor,rare,3,13,61,,,economy,Gather Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Onslaught Helm,Helm,rare,9,9,45,,,offense,Army ATK (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Knight's Helm,Helm,rare,6,10,51,,,economy,March Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Shadowsteel Blade,Weapon,rare,18,1,22,,,dungeon,Army ATK + Dungeon Damage 1.5–3.0% (guar.); Shadow of the Crypt set — SET COMPLETE (4/4),Daily Dungeon 8–25
+Sentinel Helm,Helm,rare,3,12,57,,,defense,Army Def (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Pathfinder's Blade,Weapon,rare,15,2,30,8,March Speed,economy,+8% March Speed base; March Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Harvest Sickle,Weapon,rare,15,2,17,3,Food Gathering,economy,+3% Food Gathering base; Gather Speed + Food Gathering (guar.); no random slots,Monster Den 8–20 · Dungeon · Weekly Boss
+Knight's Longsword,Weapon,rare,17,3,20,,,economy,March Speed (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Oathkeeper Longsword,Weapon,rare,11,5,36,,,defense,Army Def (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Lancebreaker,Weapon,rare,23,1,5,,,offense,Army ATK (guar.); 1 random Any Bonus slot,Monster Den 8–20 · Dungeon · Weekly Boss
+Silver Slayer's Band,Ring,uncommon,10,4,13,,,offense,Army ATK (guar.); no random slots; scales Lv31,Monster Den 5–15 · Dungeon · Weekly Boss
+Silver Band,Ring,uncommon,6,5,19,,,economy,Gather Speed (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Silver Sentinel Band,Ring,uncommon,3,7,25,,,defense,Army Def (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Verdant Warcharm,Accessory,uncommon,9,3,23,,,offense,Army ATK (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Verdant Guardstone,Accessory,uncommon,3,5,38,,,defense,Army Def (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Plated Greaves,Boots,uncommon,3,4,42,2,March Speed,economy,+2% March Speed base; March Speed (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Emerald Pendant,Accessory,uncommon,6,4,30,,,economy,Gather Speed (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Onrush Greaves,Boots,uncommon,5,3,37,2,March Speed,offense,+2% March Speed base; Army ATK (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Merchant's Pouch,Accessory,uncommon,5,3,26,2,Gold Gathering,economy,+2% Gold Gathering base; Gold Gathering (guar.); Prospector's Kit set 2/3,Monster Den 5–15 · Dungeon · Weekly Boss
+Holdfast Greaves,Boots,uncommon,2,4,46,2,March Speed,defense,+2% March Speed base; Army Def (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Wolfhide Vest,Armor,uncommon,1,8,58,,,offense,Monster Damage Reduction 0.9–1.8% (guar.); Beastlord's Hunt set 2/4,Monster Den 1–15
+Reaver's Maille,Armor,uncommon,3,9,44,,,offense,Army ATK (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Ringwall Hauberk,Armor,uncommon,1,10,47,,,defense,Army Def (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Chainmail,Armor,uncommon,2,10,46,,,economy,Gather Speed (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Forager's Cuirass,Armor,uncommon,1,8,57,5,Gather Speed,economy,+5% Gather Speed base; Gathering Yield (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Chainmail Hood,Helm,uncommon,4,8,38,,,economy,March Speed (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Bloodhood Coif,Helm,uncommon,6,7,34,,,offense,Army ATK (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Coif of the Steadfast,Helm,uncommon,2,9,42,,,defense,Army Def (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Steel Blade,Weapon,uncommon,11,2,15,,,economy,March Speed (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Shrikeblade,Weapon,uncommon,15,0,4,,,offense,Army ATK (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Bulwark Falchion,Weapon,uncommon,6,3,27,,,defense,Army Def (guar.); no random slots,Monster Den 5–15 · Dungeon · Weekly Boss
+Beastfang Dagger,Weapon,uncommon,11,1,19,,,offense,Monster Damage 0.9–1.8% (guar.); Beastlord's Hunt set 3/4,Monster Den 1–15
+Miner's Pick,Weapon,uncommon,9,2,13,2,Stone Gathering,economy,+2% Stone Gathering base; Stone Gathering (guar.); Prospector's Kit set — SET COMPLETE (3/3),Monster Den 5–15 · Dungeon · Weekly Boss
+Iron Fang Ring,Ring,common,5,2,6,,,offense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Iron Ring,Ring,common,3,3,8,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Iron Ward Ring,Ring,common,2,3,11,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Farmer's Gloves,Accessory,common,3,2,11,1,Food Gathering,economy,+1% Food Gathering base; no other affixes; scales Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Copper Wardcharm,Accessory,common,2,2,17,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Copper Fangcharm,Accessory,common,5,1,10,,,offense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Copper Amulet,Accessory,common,3,2,13,,,economy,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Charger's Casque,Helm,common,3,3,15,,,offense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Bulwark Visor,Helm,common,1,4,19,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Iron Helm,Helm,common,2,4,17,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Tracker's Hood,Helm,common,2,3,23,,,offense,Monster Damage +1.0% base; Beastlord's Hunt set — SET COMPLETE (4/4),Monster Den 1–15
+Hidebound Cuirass,Armor,common,1,5,21,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Raider's Jerkin,Armor,common,2,4,19,,,offense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Leather Armor,Armor,common,1,5,20,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Iron Sword,Weapon,common,6,1,7,,,offense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Rivenedge,Weapon,common,8,0,2,,,offense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Wardbrand,Weapon,common,3,2,12,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Woodsman's Axe,Weapon,common,5,1,6,,,economy,Wood Gathering +1.0% base; no other affixes; scales Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Anchorstep Boots,Boots,common,1,2,21,,,defense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Leather Boots,Boots,common,2,2,18,,,economy,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
+Skirmisher's Boots,Boots,common,3,2,16,,,offense,No affixes; scales to Lv 28,Monster Den 1–10 · Dungeon · Weekly Boss
