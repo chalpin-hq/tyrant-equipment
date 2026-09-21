@@ -1214,18 +1214,21 @@ window.addEventListener('load', function () {
       '<span class="hl-stats">A' + s.atk + ' D' + s.def + ' H' + s.hp + '</span></div>';
   }
 
-  function realItemScore(row, profileKey){
+  // useAffixes=false (Instanced context): the World-combat channels these percentage affixes
+  // feed (Damage Multiplier, the armor curve, etc.) were verified for MARCH combat specifically
+  // — we have no evidence they do anything in Instance/Arena/Dungeon, and content-specific
+  // affixes are exactly the kind of thing that plausibly doesn't carry over. Score on the three
+  // core flat stats only in that case, still projected to max level.
+  function realItemScore(row, profileKey, useAffixes){
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var stats = safeJSON(row.resolved_stats, {});
-    // Flat ATK/DEF/HP are scored at PROJECTED MAX LEVEL, not current — an under-leveled
-    // Legendary can legitimately outscore an already-maxed Epic once you account for its
-    // higher ceiling (see LEVEL_GROWTH_RATE above). Percentage affixes don't scale with
-    // level, so those stay on the item's actual current roll.
     var maxStats = equipStatsAtMax(row);
     var score = maxStats.atk*w.atk + maxStats.def*w.def + maxStats.hp*w.hp;
-    Object.keys(w.pct).forEach(function(key){
-      score += (stats[key]||0) * w.pct[key] * 150000;
-    });
+    if (useAffixes !== false){
+      Object.keys(w.pct).forEach(function(key){
+        score += (stats[key]||0) * w.pct[key] * 150000;
+      });
+    }
     return score;
   }
 
@@ -1328,14 +1331,16 @@ window.addEventListener('load', function () {
     var equip = rosterState.equip;
     var equipById = rosterState.equipById;
 
-    // Tracked separately: an item worn in one hero's INSTANCED slot is not "unavailable" for
-    // a MARCH recommendation elsewhere (and vice versa) — these are two independent loadouts
-    // per hero, not one merged "is this touched at all" pool.
-    var marchWornIds = {};
-    var instancedWornIds = {};
+    // A physical item can only be worn by ONE hero at a time — but that ONE hero may have it
+    // in both their march AND instanced loadout simultaneously (Kael/Hadrian/Durgan all do this
+    // for real). So ownership is per-HERO, not per-context: an item worn by hero A (in either
+    // context) is off-limits to every other hero's recommendations, but still fair game for
+    // hero A's OWN other-context loadout.
+    var itemOwner = {};
     heroes.forEach(function(h){
-      safeJSON(h.march_item_ids, []).forEach(function(id){ marchWornIds[id] = true; });
-      safeJSON(h.instanced_item_ids, []).forEach(function(id){ instancedWornIds[id] = true; });
+      ["march_item_ids","instanced_item_ids"].forEach(function(key){
+        safeJSON(h[key], []).forEach(function(id){ itemOwner[id] = h.hero_definition_id; });
+      });
     });
     var claimedBenchIds = {};
     var results = {};
@@ -1347,7 +1352,10 @@ window.addEventListener('load', function () {
       var profile = lo.profile;
       var context = lo.context === "instanced" ? "instanced" : "march";
       var itemIdsField = context === "instanced" ? "instanced_item_ids" : "march_item_ids";
-      var wornIds = context === "instanced" ? instancedWornIds : marchWornIds;
+      var wornIds = {};
+      Object.keys(itemOwner).forEach(function(id){
+        if (itemOwner[id] !== lo.hero) wornIds[id] = true;
+      });
 
       // Only the hero's FIRST loadout in a given context (march or instanced) compares against
       // what's actually equipped there — any later loadout for the same hero+context is a
@@ -1362,6 +1370,7 @@ window.addEventListener('load', function () {
         currentIds.forEach(function(id){ var r = equipById[id]; if (r) currentBySlot[r.slot] = r; });
       }
 
+      var useAffixes = context !== "instanced";
       var heroResult = {};
       CSV_SLOTS.forEach(function(slot){
         var currentItem = currentBySlot[slot];
@@ -1373,7 +1382,7 @@ window.addEventListener('load', function () {
           return true;
         });
         if (candidates.length === 0){ heroResult[slot] = null; return; }
-        candidates.sort(function(a,b){ return realItemScore(b, profile) - realItemScore(a, profile); });
+        candidates.sort(function(a,b){ return realItemScore(b, profile, useAffixes) - realItemScore(a, profile, useAffixes); });
         var best = candidates[0];
         if (!currentItem || best.item_id !== currentItem.item_id){
           claimedBenchIds[best.item_id] = true;
@@ -1381,10 +1390,14 @@ window.addEventListener('load', function () {
         heroResult[slot] = {
           item: best,
           changed: !currentItem || currentItem.item_id !== best.item_id,
-          why: topContributingStat(best, profile)
+          why: useAffixes ? topContributingStat(best, profile) : null
         };
       });
-      applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip);
+      // Set bonuses are themselves percentage-affix-style bonuses (Gather Speed, PvP ATK%, ...)
+      // tied to the same unverified-for-Instance channels, so skip them here too for consistency.
+      if (useAffixes){
+        applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip);
+      }
       results[lo.id] = { loadout: lo, isPrimary: isPrimary, hero: h, slots: heroResult };
     });
     return results;
@@ -1397,7 +1410,7 @@ window.addEventListener('load', function () {
     heroes.forEach(function(h){ byDef[h.hero_definition_id] = h; });
 
     var html = '<div class="section-heading">Gear Recommender</div>';
-    html += '<div class="note-box"><strong>How this works:</strong> one flat priority list of (hero, job) loadouts — claims resolve strictly top-to-bottom across the whole list, so a hero ranked high always wins a contested item over anyone ranked lower, whatever job they’re doing. A hero’s <em>first</em> loadout in the list is scored against their actual currently-equipped gear; any later loadout for the same hero is a reserve kit built only from whatever bench is left (since only one loadout is ever physically worn at a time). Add or remove loadouts below, drag the priority with the arrows. Flat ATK/DEF/HP are scored at each item’s <strong>projected max level</strong>, not its current level — an under-leveled Legendary can legitimately beat an already-maxed Epic once you account for its higher ceiling (verified against real level-scaling data, gold text shows the projection when it differs from current). Percentage affixes don’t scale with level, so those stay on the item’s actual current roll. Treat picks as strong candidates to sanity-check, not gospel.</div>';
+    html += '<div class="note-box"><strong>How this works:</strong> one flat priority list of (hero, job) loadouts — claims resolve strictly top-to-bottom across the whole list, so a hero ranked high always wins a contested item over anyone ranked lower, whatever job they’re doing. A hero’s <em>first</em> loadout in the list is scored against their actual currently-equipped gear; any later loadout for the same hero is a reserve kit built only from whatever bench is left (since only one loadout is ever physically worn at a time). Add or remove loadouts below, drag the priority with the arrows. Flat ATK/DEF/HP are scored at each item’s <strong>projected max level</strong>, not its current level — an under-leveled Legendary can legitimately beat an already-maxed Epic once you account for its higher ceiling (verified against real level-scaling data, gold text shows the projection when it differs from current). Percentage affixes don’t scale with level, so those stay on the item’s actual current roll. <strong>Instanced (Arena/Dungeon) loadouts score core ATK/DEF/HP only, no percentage affixes or set bonuses</strong> — those channels were verified for March combat specifically and we have no evidence they apply in Instance. Treat picks as strong candidates to sanity-check, not gospel.</div>';
 
     html += '<div class="loadout-add-row">' +
       '<select id="loadoutHeroSelect">' + heroes.map(function(h){
