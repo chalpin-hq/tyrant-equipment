@@ -997,6 +997,13 @@ window.addEventListener('load', function () {
     healingSpeed:"Healing Speed"
   };
 
+  // dungeonDamage/dungeonDamageReduction are deliberately excluded from every March-scored
+  // profile below: the in-game Hero Abilities help screen confirms Daily Dungeon runs under
+  // "Instances" (turn-based, hero-centric), not "World Battles" (marches/rallies) — so this
+  // channel belongs to Instanced combat, not March. Instanced loadouts currently score no
+  // percentage affixes at all (see useAffixes), so this stat isn't counted anywhere for now
+  // rather than being misapplied to March. monsterDamage/monsterDamageReduction stay in,
+  // since Monster Den is confirmed World-Battle (March) combat.
   var ROLE_WEIGHTS = {
     gathering: {
       atk:0.05, def:0.02, hp:0.15,
@@ -1004,11 +1011,11 @@ window.addEventListener('load', function () {
     },
     offense: {
       atk:0.5, def:0.03, hp:0.15,
-      pct:{pvpAttack:14, pvpDamageMultiplier:12, monsterDamage:10, dungeonDamage:10, attackPercent:8, infantryAttack:6, archerAttack:6, cavalryAttack:6, firstRoundDamage:4, healthPercent:2}
+      pct:{pvpAttack:14, pvpDamageMultiplier:12, monsterDamage:10, attackPercent:8, infantryAttack:6, archerAttack:6, cavalryAttack:6, firstRoundDamage:4, healthPercent:2}
     },
     defense: {
       atk:0.05, def:0.05, hp:0.5,
-      pct:{healthPercent:12, infantryHealth:8, archerHealth:8, cavalryHealth:8, pvpDefense:9, monsterDamageReduction:6, dungeonDamageReduction:6, wallHealth:5, garrisonDefense:1, defensePercent:1, infantryDefense:1, archerDefense:1, cavalryDefense:1}
+      pct:{healthPercent:12, infantryHealth:8, archerHealth:8, cavalryHealth:8, pvpDefense:9, monsterDamageReduction:6, wallHealth:5, garrisonDefense:1, defensePercent:1, infantryDefense:1, archerDefense:1, cavalryDefense:1}
     },
     support: {
       atk:0.1, def:0.05, hp:0.35,
@@ -1271,13 +1278,20 @@ window.addEventListener('load', function () {
   // The game itself groups a hero's own gear into named sets (Gather, Conqueror, Warden,
   // Dungeon, ...) reported per-item in the CSV export (march_set_id/instanced_set_id +
   // owner), completely separate from the hand-researched named-item SETS below (Prospector's
-  // Kit etc). We only know one of these real sets' actual bonus (Gather, confirmed by the
-  // user: full 6-piece set = +6% Gather Speed) — for that one we score the loss directly;
-  // for the rest, where we don't know the magnitude, we fall back to a structural rule:
-  // don't recommend breaking a real, currently-intact multi-piece set unless the
-  // replacement is a genuine flat-stat upgrade, not just a marginally-better affix.
+  // Kit etc) — same tier structure (piece-count -> bonus%), but keyed by the CSV's per-hero
+  // set name/id instead of matching specific item names.
+  //   - Gather: CONFIRMED by the user — full 6-piece set = +10% Gather Speed.
+  //   - Warden / Conqueror: UNCONFIRMED — the user's working guess is that these mirror the
+  //     hand-researched Warden's Vigil / Conqueror's Regalia tiers (2pc=0.4%, 4pc=0.6%,
+  //     6pc=1.0%, on pvpDefense/pvpAttack respectively). Treat these two as provisional until
+  //     verified in-game; flagged with confirmed:false so it's easy to find and revisit.
+  // Any real set name not listed here falls back to the structural rule: don't recommend
+  // breaking a real, currently-intact multi-piece set unless the replacement is a genuine
+  // flat-stat upgrade, not just a marginally-better affix.
   var REAL_SET_BONUS = {
-    "Gather": { stat: "gatherSpeed", pieceCount: 6, fullSetBonus: 0.06 }
+    "Gather":    { stat: "gatherSpeed", tiers: { 6: 0.10 }, confirmed: true },
+    "Warden":    { stat: "pvpDefense",  tiers: { 2: 0.004, 4: 0.006, 6: 0.010 }, confirmed: false },
+    "Conqueror": { stat: "pvpAttack",   tiers: { 2: 0.004, 4: 0.006, 6: 0.010 }, confirmed: false }
   };
   function realSetInfo(row, context){
     var idKey = context === "instanced" ? "instanced_set_id" : "march_set_id";
@@ -1287,26 +1301,59 @@ window.addEventListener('load', function () {
     if (!id) return null;
     return { id: id, ownerHeroId: row[ownerKey], name: row[nameKey] };
   }
-  // Score value of the bonus a hero would LOSE by breaking a real set that's currently
-  // complete (pieceCount pieces owned). Returns 0 when we have no data for that set name,
-  // or the set isn't actually complete yet (so nothing confirmed is at stake).
+  // Score value of the bonus a hero would LOSE by breaking a real set, i.e. the gap between
+  // the tier currently achieved and whatever tier remains after losing one piece. Returns 0
+  // when we have no data for that set name, or no tier has actually been reached yet.
   function realSetBonusLossScore(setInfo, currentSetSize, profileKey){
     if (!setInfo || !setInfo.name) return 0;
     var known = REAL_SET_BONUS[setInfo.name];
-    if (!known || currentSetSize < known.pieceCount) return 0;
+    if (!known) return 0;
+    var tierLevels = Object.keys(known.tiers).map(Number).sort(function(a,b){ return a - b; });
+    var achievedTier = tierLevels.filter(function(t){ return t <= currentSetSize; }).pop();
+    if (!achievedTier) return 0;
+    var afterLossTier = tierLevels.filter(function(t){ return t <= currentSetSize - 1; }).pop();
+    var lossFraction = known.tiers[achievedTier] - (afterLossTier ? known.tiers[afterLossTier] : 0);
+    if (lossFraction <= 0) return 0;
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var weight = w.pct[known.stat] || 0;
-    return known.fullSetBonus * weight * 150000;
+    return lossFraction * weight * 150000;
   }
 
-  function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip){
+  // A hero keeps fully independent March and Instanced loadouts (confirmed from real data —
+  // Kael/Hadrian/Durgan wear identical items in both for most slots, but different ones in
+  // others), so a bench item recommended into a hero's March slot should still be available
+  // for that SAME hero's Instanced slot — it's not "used up" the way it would be for a
+  // different hero. It only stops being available to that hero once it's already claimed for
+  // that exact context (so a reserve loadout in the same context still needs its own item).
+  function claimBenchItem(claimedBenchIds, itemId, heroDefId, context){
+    var claim = claimedBenchIds[itemId];
+    if (!claim || claim.hero !== heroDefId){
+      claim = { hero: heroDefId, contexts: {} };
+      claimedBenchIds[itemId] = claim;
+    }
+    claim.contexts[context] = true;
+  }
+  function isBenchItemClaimed(claimedBenchIds, itemId, heroDefId, context){
+    var claim = claimedBenchIds[itemId];
+    if (!claim) return false;
+    if (claim.hero === heroDefId && !claim.contexts[context]) return false;
+    return true;
+  }
+  function unclaimBenchItem(claimedBenchIds, itemId, heroDefId, context){
+    var claim = claimedBenchIds[itemId];
+    if (!claim || claim.hero !== heroDefId) return;
+    delete claim.contexts[context];
+    if (Object.keys(claim.contexts).length === 0) delete claimedBenchIds[itemId];
+  }
+
+  function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context){
     var target = normName(pieceName);
     var matches = equip.filter(function(row){
       if (row.slot !== slot) return false;
       if (normName(row.name) !== target) return false;
       if (currentItem && row.item_id === currentItem.item_id) return true;
       if (wornIds[row.item_id]) return false;
-      if (claimedBenchIds[row.item_id]) return false;
+      if (isBenchItemClaimed(claimedBenchIds, row.item_id, heroDefId, context)) return false;
       return true;
     });
     return matches[0] || null;
@@ -1316,7 +1363,7 @@ window.addEventListener('load', function () {
   // from a verified set-bonus tier (Prospector's Kit, Beastlord's Hunt, etc.) and, if swapping
   // in the missing set piece scores higher than the naive pick once the set bonus is counted,
   // make that swap. Only sets in SET_BONUS_TIERS are considered — see the note there.
-  function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId){
+  function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId, context){
     var w = ROLE_WEIGHTS[profile] || ROLE_WEIGHTS.offense;
     SETS.forEach(function(set){
       var tiers = SET_BONUS_TIERS[set.name];
@@ -1356,7 +1403,7 @@ window.addEventListener('load', function () {
         var piece = missing[i];
         if (!piece.slot) continue;
         var currentItem = currentBySlot[piece.slot];
-        var candidate = findSetPieceCandidate(piece.name, piece.slot, wornIds, claimedBenchIds, currentItem, equip);
+        var candidate = findSetPieceCandidate(piece.name, piece.slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context);
         if (!candidate) continue;
 
         var existingPick = heroResult[piece.slot] ? heroResult[piece.slot].item : null;
@@ -1365,10 +1412,10 @@ window.addEventListener('load', function () {
         if (candidateScore <= existingScore) continue;
 
         if (existingPick && (!currentItem || existingPick.item_id !== currentItem.item_id)){
-          delete claimedBenchIds[existingPick.item_id];
+          unclaimBenchItem(claimedBenchIds, existingPick.item_id, heroDefId, context);
         }
         if (!currentItem || candidate.item_id !== currentItem.item_id){
-          claimedBenchIds[candidate.item_id] = true;
+          claimBenchItem(claimedBenchIds, candidate.item_id, heroDefId, context);
         }
         var bonusText = Object.keys(nextStats).map(function(k){
           return (STAT_LABEL[k] || k) + " " + Math.round(nextStats[k]*1000)/10 + "%";
@@ -1464,7 +1511,7 @@ window.addEventListener('load', function () {
           if (row.slot !== slot) return false;
           if (currentItem && row.item_id === currentItem.item_id) return true;
           if (wornIds[row.item_id]) return false;
-          if (claimedBenchIds[row.item_id]) return false;
+          if (isBenchItemClaimed(claimedBenchIds, row.item_id, lo.hero, context)) return false;
           if (currentIsSetProtected){
             var rowInfo = realSetInfo(row, context);
             var sameSet = rowInfo && currentSetInfo && rowInfo.id === currentSetInfo.id && rowInfo.ownerHeroId === currentSetInfo.ownerHeroId;
@@ -1480,7 +1527,7 @@ window.addEventListener('load', function () {
         candidates.sort(function(a,b){ return realItemScore(b, profile, useAffixes, lo.hero) - realItemScore(a, profile, useAffixes, lo.hero); });
         var best = candidates[0];
         if (!currentItem || best.item_id !== currentItem.item_id){
-          claimedBenchIds[best.item_id] = true;
+          claimBenchItem(claimedBenchIds, best.item_id, lo.hero, context);
         }
         heroResult[slot] = {
           item: best,
@@ -1491,7 +1538,7 @@ window.addEventListener('load', function () {
       // Set bonuses are themselves percentage-affix-style bonuses (Gather Speed, PvP ATK%, ...)
       // tied to the same unverified-for-Instance channels, so skip them here too for consistency.
       if (useAffixes){
-        applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, lo.hero);
+        applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, lo.hero, context);
       }
       results[lo.id] = { loadout: lo, isPrimary: isPrimary, hero: h, slots: heroResult };
     });
