@@ -228,6 +228,7 @@
   }
   .btn-secondary:hover{border-color:var(--gold); background:var(--panel);}
   .roster-error{color:var(--bad); font-size:.82rem; margin-top:8px;}
+  .roster-warning{color:var(--warn); font-size:.82rem; margin-top:8px;}
 
   .roster-toolbar{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;}
   .roster-toolbar .roster-file-label{font-size:.78rem; color:var(--text-dim);}
@@ -792,7 +793,8 @@ window.addEventListener('load', function () {
   function renderReference(){
     var slotFilter = refState.slot;
     var roleFilter = refState.role;
-    var html = '<div class="icon-legend">' + SLOTS.map(function(s){
+    var html = '<div class="note-box"><strong>Note:</strong> the role badges here come from a rough text-heuristic scan of this static catalog, independent of the real scoring math the <strong>My Roster</strong> tab uses on your actual gear. The two can disagree — treat this as a shopping-list reference, not a substitute for My Roster once you own the item.</div>';
+    html += '<div class="icon-legend">' + SLOTS.map(function(s){
       return '<span class="legend-item">' + SLOT_ICONS[s] + s + '</span>';
     }).join('') + '</div>';
     var totalMatched = 0;
@@ -860,7 +862,7 @@ window.addEventListener('load', function () {
   // BUILD YOUR OWN TAB
   // ---------------------------------------------------------------
   function renderBuilder(){
-    var html = '<div class="note-box"><strong>Note:</strong> totals use the same Level 1 / 0% quality baseline stats as the reference table — useful for comparing relative item strength, not a prediction of your actual endgame numbers.</div>';
+    var html = '<div class="note-box"><strong>Note:</strong> totals use the same Level 1 / 0% quality baseline stats as the reference table — useful for comparing relative item strength, not a prediction of your actual endgame numbers. Role Fitness below is a rough text-heuristic score over this static catalog, independent of the real math the <strong>My Roster</strong> recommender uses on your actual gear (level/quality projection, hero affinity weighting, real set-bonus tiers) — the two can disagree on the same item. Treat this tab as a shopping-list planner, and My Roster as the source of truth once you actually own the gear.</div>';
     html += '<div class="builder-grid">';
     SLOTS.forEach(function(slot){
       html += '<div class="slot-picker"><label>' + SLOT_ICONS[slot] + '<span>' + slot + '</span></label><select data-slot="' + slot + '">';
@@ -994,7 +996,8 @@ window.addEventListener('load', function () {
     pvpDefense:"PvP Defense", monsterDamageReduction:"Monster Dmg Reduction", dungeonDamageReduction:"Dungeon Dmg Reduction",
     wallHealth:"Wall Health", garrisonDefense:"Garrison Defense", defensePercent:"Army Defense",
     infantryDefense:"Infantry Defense", archerDefense:"Archer Defense", cavalryDefense:"Cavalry Defense",
-    healingSpeed:"Healing Speed"
+    healingSpeed:"Healing Speed",
+    atk:"Attack (flat)", def:"Defense (flat)", hp:"Health (flat)"
   };
 
   // dungeonDamage/dungeonDamageReduction are deliberately excluded from every March-scored
@@ -1095,7 +1098,7 @@ window.addEventListener('load', function () {
   initLoadouts();
   var nextLoadoutId = loadouts.length;
 
-  var rosterState = { heroes:[], equip:[], equipById:{}, error:null };
+  var rosterState = { heroes:[], equip:[], equipById:{}, error:null, warnings:[] };
 
   function parseCSVText(text){
     var rows = []; var row = []; var field = ""; var inQuotes = false;
@@ -1188,7 +1191,38 @@ window.addEventListener('load', function () {
         rosterState.error = null;
       }
       var equipById = {};
-      equip.forEach(function(row){ equipById[row.item_id] = row; });
+      var seenIds = {};
+      var duplicateIds = {};
+      equip.forEach(function(row){
+        if (seenIds[row.item_id]) duplicateIds[row.item_id] = true;
+        seenIds[row.item_id] = true;
+        equipById[row.item_id] = row;
+      });
+      // An item_id claimed by more than one hero's march/instanced list is a data-integrity
+      // problem, not something the recommender can resolve — it silently gives ownership to
+      // whichever hero happens to be processed last, so surface it instead of hiding it.
+      var ownerNames = {};
+      heroes.forEach(function(h){
+        ["march_item_ids","instanced_item_ids"].forEach(function(key){
+          safeJSON(h[key], []).forEach(function(id){
+            ownerNames[id] = ownerNames[id] || [];
+            if (ownerNames[id].indexOf(h.hero_name) === -1) ownerNames[id].push(h.hero_name);
+          });
+        });
+      });
+      var conflictedIds = Object.keys(ownerNames).filter(function(id){ return ownerNames[id].length > 1; });
+      var warnings = [];
+      var dupCount = Object.keys(duplicateIds).length;
+      if (dupCount){
+        warnings.push(dupCount + ' item' + (dupCount===1?'':'s') + ' appear more than once in this export (duplicate item_id rows) — lookups use only the last copy of each, but every copy still counts toward the Total Gear / Bench numbers, which will be inflated.');
+      }
+      if (conflictedIds.length){
+        var examples = conflictedIds.slice(0,3).map(function(id){
+          return (equipById[id] ? equipById[id].name : id) + ' (' + ownerNames[id].join(' & ') + ')';
+        }).join(', ');
+        warnings.push(conflictedIds.length + ' item' + (conflictedIds.length===1?'':'s') + ' listed as worn by more than one hero, e.g. ' + examples + ' — whichever hero the recommender processes last silently "wins" that item. Re-export if this looks stale.');
+      }
+      rosterState.warnings = warnings;
       rosterState.heroes = heroes;
       rosterState.equip = equip;
       rosterState.equipById = equipById;
@@ -1446,13 +1480,25 @@ window.addEventListener('load', function () {
     });
   }
 
+  // Which single factor — flat ATK/DEF/HP or a percentage affix — contributed the most to
+  // this item's score, for the recommender's "best <X>" label. Previously only ever looked at
+  // percentage affixes, so a pick actually driven by the flat-stat gap (e.g. a higher-level
+  // Legendary's raw ATK/DEF/HP ceiling, as with Kael's Warcrown-vs-Cowl case) got mislabeled
+  // with whatever pct affix happened to be biggest, even when that wasn't the real reason it
+  // won. Flat contributions are scaled the same way realItemScore combines them (pct * 150000)
+  // so the two are actually comparable, not just whichever happens to have a bigger raw number.
   function topContributingStat(row, profileKey, heroDefId){
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var stats = safeJSON(row.resolved_stats, {});
+    var maxStats = equipStatsAtMax(row);
     var best = {key:null, val:0};
+    var flatContribs = {atk: maxStats.atk*w.atk, def: maxStats.def*w.def, hp: maxStats.hp*w.hp};
+    Object.keys(flatContribs).forEach(function(key){
+      if (flatContribs[key] > best.val){ best = {key:key, val:flatContribs[key]}; }
+    });
     Object.keys(w.pct).forEach(function(key){
       var mult = heroDefId ? troopStatMultiplier(heroDefId, key) : 1;
-      var c = (stats[key]||0) * w.pct[key] * mult;
+      var c = (stats[key]||0) * w.pct[key] * mult * 150000;
       if (c > best.val){ best = {key:key, val:c}; }
     });
     return best.key;
@@ -1522,7 +1568,12 @@ window.addEventListener('load', function () {
       CSV_SLOTS.forEach(function(slot){
         var currentItem = currentBySlot[slot];
         var currentSetInfo = currentItem ? realSetInfo(currentItem, context) : null;
-        var currentIsSetProtected = currentItem && setSizeBySlot[slot] >= 2;
+        // Gated by useAffixes/context to match applySetBonusRefinement below — real set
+        // bonuses are a percentage-affix-style channel we've only verified for March combat,
+        // so Instanced loadouts must not get set-protected either. Without this gate an
+        // Instanced set could get wrongly blocked here with no refinement pass to undo it,
+        // since that pass only ever runs for march (see the `if (useAffixes)` call below).
+        var currentIsSetProtected = useAffixes && currentItem && setSizeBySlot[slot] >= 2;
         var candidates = equip.filter(function(row){
           if (row.slot !== slot) return false;
           if (currentItem && row.item_id === currentItem.item_id) return true;
@@ -1633,11 +1684,15 @@ window.addEventListener('load', function () {
             ? '<span class="badge b3">' + (r.isPrimary ? "PICK" : "RESERVE") + '</span>'
             : '<span class="badge b2">KEEP</span>';
           var whyLabel = entry.why ? (STAT_LABEL[entry.why] || entry.why) : null;
-          var atCap = Number(entry.item.level) >= Number(entry.item.max_level);
-          var maxS = atCap ? null : equipStatsAtMax(entry.item);
+          // Blank level/max_level (missing export data) must NOT silently read as "already at
+          // cap" — Number("") is 0, so 0 >= 0 was true, hiding the fact we simply don't know
+          // this item's headroom rather than knowing it has none.
+          var hasLevelData = entry.item.level !== "" && entry.item.level != null && entry.item.max_level !== "" && entry.item.max_level != null;
+          var atCap = hasLevelData && Number(entry.item.level) >= Number(entry.item.max_level);
+          var maxS = (hasLevelData && !atCap) ? equipStatsAtMax(entry.item) : null;
           var projectedNote = maxS
             ? '<span class="rec-projected">→ Lv' + entry.item.max_level + ': A' + Math.round(maxS.atk) + ' D' + Math.round(maxS.def) + ' H' + Math.round(maxS.hp) + '</span>'
-            : '';
+            : (hasLevelData ? '' : '<span class="dim" style="font-size:.7rem;"> (no level data)</span>');
           html += '<div class="rec-slot-row">' + icon +
             '<span class="rec-slot-name">' + SLOT_LABEL[slot] + '</span>' +
             '<span class="rec-item-name">' + entry.item.name + '</span>' +
@@ -1663,6 +1718,9 @@ window.addEventListener('load', function () {
       '<textarea id="rosterPasteInput" class="roster-paste" placeholder="Copy your inventory export in-game, then paste it here (Ctrl+V)"></textarea>' +
       '<button type="button" id="rosterPasteBtn" class="btn-secondary">Load pasted data</button>';
     if (rosterState.error) html += '<div class="roster-error">' + rosterState.error + '</div>';
+    (rosterState.warnings || []).forEach(function(w){
+      html += '<div class="roster-warning">' + w + '</div>';
+    });
     html += '</div>';
 
     if (rosterState.heroes.length === 0){
@@ -1705,11 +1763,16 @@ window.addEventListener('load', function () {
         }
       });
     });
-    // duplicate-better-copy check, march loadout only
-    var wornMarch = {}; // item_id -> hero_name
+    // duplicate-better-copy check, march loadout only. Scores with realItemScore (max-level
+    // projected, profile-weighted, percentage affixes included) rather than a raw unprojected
+    // atk+def+hp sum, so this agrees with what the recommender above would actually say instead
+    // of contradicting it. Also verifies the affixes actually match before claiming they do —
+    // two physical copies of the same named item can roll completely different affixes (we've
+    // seen three different "Conqueror's Cowl" copies with three different affix sets).
+    var wornMarch = {}; // item_id -> {heroName, heroDefId}
     heroes.forEach(function(h){
       var ids = safeJSON(h.march_item_ids, []);
-      ids.forEach(function(id){ wornMarch[id] = h.hero_name; });
+      ids.forEach(function(id){ wornMarch[id] = {heroName: h.hero_name, heroDefId: h.hero_definition_id}; });
     });
     var byName = {};
     equip.forEach(function(row){ (byName[row.name] = byName[row.name] || []).push(row); });
@@ -1718,12 +1781,24 @@ window.addEventListener('load', function () {
       var wornCopies = items.filter(function(it){ return wornMarch[it.item_id]; });
       var benchCopies = items.filter(function(it){ return !wornIds[it.item_id]; });
       if (!wornCopies.length || !benchCopies.length) return;
-      var worst = wornCopies.reduce(function(a,b){ return equipTotal(a) < equipTotal(b) ? a : b; });
-      var best = benchCopies.reduce(function(a,b){ return equipTotal(a) > equipTotal(b) ? a : b; });
-      if (equipTotal(best) > equipTotal(worst) * 1.15){
-        var hname = wornMarch[worst.item_id];
-        var ws = equipStats(worst), bs = equipStats(best);
-        quickwins.push({type:"upgrade", html:'<b>' + hname + '</b>’s ' + name + ' (Lv' + worst.level + ' Q' + worst.quality_percent + '%, A' + ws.atk + '/D' + ws.def + '/H' + ws.hp + ') has a better copy sitting idle: Lv' + best.level + ' Q' + best.quality_percent + '% (A' + bs.atk + '/D' + bs.def + '/H' + bs.hp + '). Same item, same affixes — safe swap.'});
+      var scored = wornCopies.map(function(it){
+        var owner = wornMarch[it.item_id];
+        var profile = (HEROES[owner.heroDefId] && HEROES[owner.heroDefId].profile) || "offense";
+        return {item: it, owner: owner, profile: profile, score: realItemScore(it, profile, true, owner.heroDefId)};
+      });
+      scored.sort(function(a,b){ return a.score - b.score; });
+      var worst = scored[0];
+      var best = benchCopies.reduce(function(a,b){
+        return realItemScore(a, worst.profile, true, worst.owner.heroDefId) > realItemScore(b, worst.profile, true, worst.owner.heroDefId) ? a : b;
+      });
+      var bestScore = realItemScore(best, worst.profile, true, worst.owner.heroDefId);
+      if (bestScore > worst.score * 1.15){
+        var sameAffixes = JSON.stringify(safeJSON(worst.item.affixes, [])) === JSON.stringify(safeJSON(best.affixes, []));
+        var ws = equipStats(worst.item), bs = equipStats(best);
+        var affixNote = sameAffixes
+          ? "Same item, same affixes — safe swap."
+          : "Same base item but a DIFFERENT affix roll — check the affixes still fit before swapping, not just raw stats.";
+        quickwins.push({type:"upgrade", html:'<b>' + worst.owner.heroName + '</b>’s ' + name + ' (Lv' + worst.item.level + ' Q' + worst.item.quality_percent + '%, A' + ws.atk + '/D' + ws.def + '/H' + ws.hp + ') has a better copy sitting idle: Lv' + best.level + ' Q' + best.quality_percent + '% (A' + bs.atk + '/D' + bs.def + '/H' + bs.hp + '). ' + affixNote});
       }
     });
 
