@@ -1070,7 +1070,16 @@ window.addEventListener('load', function () {
   // loadout's default split; every loadout keeps its OWN editable Infantry/Archer/Cavalry %
   // (troopSplit) in the priority list, and that real composition is what actually drives
   // troop-specific stat scoring from here on — see effectiveTroopMultiplier.
+  // A few heroes have a strong enough default habit to be worth overriding the generic
+  // 60/30/10 affinity seed with (per user, 2026-09-29): Kael is run 100% Cavalry as standard.
+  var HERO_DEFAULT_TROOP_SPLIT = {
+    bloodreaver_epic: {Infantry:0, Archer:0, Cavalry:100}
+  };
   function defaultTroopSplit(heroDefId){
+    if (HERO_DEFAULT_TROOP_SPLIT[heroDefId]){
+      var override = HERO_DEFAULT_TROOP_SPLIT[heroDefId];
+      return {Infantry:override.Infantry, Archer:override.Archer, Cavalry:override.Cavalry};
+    }
     var order = heroAffinityTroops(heroDefId).slice();
     ["Infantry","Archer","Cavalry"].forEach(function(t){ if (order.indexOf(t) === -1) order.push(t); });
     var weights = [60, 30, 10];
