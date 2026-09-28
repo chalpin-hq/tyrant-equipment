@@ -291,6 +291,15 @@
     border-radius:4px; width:24px; height:24px; cursor:pointer; font-size:.8rem; line-height:1;
   }
   .priority-item .pmoves button:hover{color:var(--gold-bright); border-color:var(--gold);}
+  .troop-split{display:flex; align-items:center; gap:6px; flex-shrink:0; font-size:.68rem; color:var(--text-dim); cursor:help;}
+  .ts-field{display:flex; align-items:center; gap:3px;}
+  .ts-field input{
+    width:36px; background:var(--panel2); border:1px solid var(--border); color:var(--text);
+    border-radius:4px; padding:2px 3px; font-size:.72rem; font-variant-numeric:tabular-nums;
+  }
+  .ts-field input:focus{outline:1px solid var(--gold);}
+  .ts-total{font-weight:700; width:32px; text-align:right; font-variant-numeric:tabular-nums;}
+  .ts-total.bad{color:var(--bad);}
 
   .rec-card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px;}
   .rec-card-header{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;}
@@ -1055,6 +1064,30 @@ window.addEventListener('load', function () {
     return AFFINITY_TROOP_WEIGHT.off;
   }
 
+  // Real march composition is a player choice, not a fixed hero property — the same hero
+  // might run 100% Cavalry one day and 33/33/33 another, depending on the fight (confirmed
+  // 2026-09-29). So AFFINITY_TROOP_WEIGHT above is only ever used as a seed for a new
+  // loadout's default split; every loadout keeps its OWN editable Infantry/Archer/Cavalry %
+  // (troopSplit) in the priority list, and that real composition is what actually drives
+  // troop-specific stat scoring from here on — see effectiveTroopMultiplier.
+  function defaultTroopSplit(heroDefId){
+    var order = heroAffinityTroops(heroDefId).slice();
+    ["Infantry","Archer","Cavalry"].forEach(function(t){ if (order.indexOf(t) === -1) order.push(t); });
+    var weights = [60, 30, 10];
+    var split = {Infantry:0, Archer:0, Cavalry:0};
+    order.slice(0,3).forEach(function(t, i){ split[t] = weights[i]; });
+    return split;
+  }
+  // Prefers the loadout's actual chosen composition (troopSplit, in percent) when given —
+  // falls back to the old affinity-bucket heuristic only where no loadout is available to read
+  // a split from (e.g. the Quick Wins scan for a hero with no march loadout set up yet).
+  function effectiveTroopMultiplier(heroDefId, statKey, troopSplit){
+    var troop = TROOP_STAT_TYPE[statKey];
+    if (!troop) return 1;
+    if (troopSplit && typeof troopSplit[troop] === "number") return troopSplit[troop] / 100;
+    return heroDefId ? troopStatMultiplier(heroDefId, statKey) : 1;
+  }
+
   var PROFILE_LABEL = {gathering:"Gathering", offense:"Offense", defense:"Defence", support:"Support"};
 
   // Single flat, editable priority list of (hero, job) loadouts — set by the user (2026-09-21),
@@ -1093,7 +1126,7 @@ window.addEventListener('load', function () {
 
   var loadouts = [];
   function initLoadouts(){
-    loadouts = DEFAULT_LOADOUTS.map(function(l, i){ return {id:"L" + i, hero:l.hero, profile:l.profile, context:l.context || "march"}; });
+    loadouts = DEFAULT_LOADOUTS.map(function(l, i){ return {id:"L" + i, hero:l.hero, profile:l.profile, context:l.context || "march", troopSplit: defaultTroopSplit(l.hero)}; });
   }
   initLoadouts();
   var nextLoadoutId = loadouts.length;
@@ -1289,14 +1322,14 @@ window.addEventListener('load', function () {
   // — we have no evidence they do anything in Instance/Arena/Dungeon, and content-specific
   // affixes are exactly the kind of thing that plausibly doesn't carry over. Score on the three
   // core flat stats only in that case, still projected to max level.
-  function realItemScore(row, profileKey, useAffixes, heroDefId){
+  function realItemScore(row, profileKey, useAffixes, heroDefId, troopSplit){
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var stats = safeJSON(row.resolved_stats, {});
     var maxStats = equipStatsAtMax(row);
     var score = maxStats.atk*w.atk + maxStats.def*w.def + maxStats.hp*w.hp;
     if (useAffixes !== false){
       Object.keys(w.pct).forEach(function(key){
-        var mult = heroDefId ? troopStatMultiplier(heroDefId, key) : 1;
+        var mult = effectiveTroopMultiplier(heroDefId, key, troopSplit);
         score += (stats[key]||0) * w.pct[key] * mult * 150000;
       });
     }
@@ -1392,7 +1425,7 @@ window.addEventListener('load', function () {
   // quality/level. Preferring file order over score meant a low-quality loose bench copy
   // could silently shadow the hero's own better-rolled equipped piece and make a genuine
   // set-completion swap look not worth it.
-  function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context, profile){
+  function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context, profile, troopSplit){
     var target = normName(pieceName);
     var matches = equip.filter(function(row){
       if (row.slot !== slot) return false;
@@ -1404,7 +1437,7 @@ window.addEventListener('load', function () {
     });
     if (matches.length === 0) return null;
     matches.sort(function(a, b){
-      return realItemScore(b, profile, true, heroDefId) - realItemScore(a, profile, true, heroDefId);
+      return realItemScore(b, profile, true, heroDefId, troopSplit) - realItemScore(a, profile, true, heroDefId, troopSplit);
     });
     return matches[0];
   }
@@ -1413,7 +1446,7 @@ window.addEventListener('load', function () {
   // from a verified set-bonus tier (Prospector's Kit, Beastlord's Hunt, etc.) and, if swapping
   // in the missing set piece scores higher than the naive pick once the set bonus is counted,
   // make that swap. Only sets in SET_BONUS_TIERS are considered — see the note there.
-  function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId, context){
+  function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId, context, troopSplit){
     var w = ROLE_WEIGHTS[profile] || ROLE_WEIGHTS.offense;
     SETS.forEach(function(set){
       var tiers = SET_BONUS_TIERS[set.name];
@@ -1443,7 +1476,7 @@ window.addEventListener('load', function () {
       var deltaScore = 0;
       Object.keys(nextStats).forEach(function(k){
         var delta = (nextStats[k] || 0) - (achievedStats[k] || 0);
-        var mult = heroDefId ? troopStatMultiplier(heroDefId, k) : 1;
+        var mult = effectiveTroopMultiplier(heroDefId, k, troopSplit);
         deltaScore += delta * (w.pct[k] || 0) * mult * 150000;
       });
       if (deltaScore <= 0) return;
@@ -1453,12 +1486,12 @@ window.addEventListener('load', function () {
         var piece = missing[i];
         if (!piece.slot) continue;
         var currentItem = currentBySlot[piece.slot];
-        var candidate = findSetPieceCandidate(piece.name, piece.slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context, profile);
+        var candidate = findSetPieceCandidate(piece.name, piece.slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context, profile, troopSplit);
         if (!candidate) continue;
 
         var existingPick = heroResult[piece.slot] ? heroResult[piece.slot].item : null;
-        var existingScore = existingPick ? realItemScore(existingPick, profile, true, heroDefId) : 0;
-        var candidateScore = realItemScore(candidate, profile, true, heroDefId) + deltaScore;
+        var existingScore = existingPick ? realItemScore(existingPick, profile, true, heroDefId, troopSplit) : 0;
+        var candidateScore = realItemScore(candidate, profile, true, heroDefId, troopSplit) + deltaScore;
         if (candidateScore <= existingScore) continue;
 
         if (existingPick && (!currentItem || existingPick.item_id !== currentItem.item_id)){
@@ -1487,7 +1520,7 @@ window.addEventListener('load', function () {
   // with whatever pct affix happened to be biggest, even when that wasn't the real reason it
   // won. Flat contributions are scaled the same way realItemScore combines them (pct * 150000)
   // so the two are actually comparable, not just whichever happens to have a bigger raw number.
-  function topContributingStat(row, profileKey, heroDefId){
+  function topContributingStat(row, profileKey, heroDefId, troopSplit){
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var stats = safeJSON(row.resolved_stats, {});
     var maxStats = equipStatsAtMax(row);
@@ -1497,7 +1530,7 @@ window.addEventListener('load', function () {
       if (flatContribs[key] > best.val){ best = {key:key, val:flatContribs[key]}; }
     });
     Object.keys(w.pct).forEach(function(key){
-      var mult = heroDefId ? troopStatMultiplier(heroDefId, key) : 1;
+      var mult = effectiveTroopMultiplier(heroDefId, key, troopSplit);
       var c = (stats[key]||0) * w.pct[key] * mult * 150000;
       if (c > best.val){ best = {key:key, val:c}; }
     });
@@ -1591,7 +1624,7 @@ window.addEventListener('load', function () {
           return true;
         });
         if (candidates.length === 0){ heroResult[slot] = null; return; }
-        candidates.sort(function(a,b){ return realItemScore(b, profile, useAffixes, lo.hero) - realItemScore(a, profile, useAffixes, lo.hero); });
+        candidates.sort(function(a,b){ return realItemScore(b, profile, useAffixes, lo.hero, lo.troopSplit) - realItemScore(a, profile, useAffixes, lo.hero, lo.troopSplit); });
         var best = candidates[0];
         if (!currentItem || best.item_id !== currentItem.item_id){
           claimBenchItem(claimedBenchIds, best.item_id, lo.hero, context);
@@ -1599,13 +1632,13 @@ window.addEventListener('load', function () {
         heroResult[slot] = {
           item: best,
           changed: !currentItem || currentItem.item_id !== best.item_id,
-          why: useAffixes ? topContributingStat(best, profile, lo.hero) : null
+          why: useAffixes ? topContributingStat(best, profile, lo.hero, lo.troopSplit) : null
         };
       });
       // Set bonuses are themselves percentage-affix-style bonuses (Gather Speed, PvP ATK%, ...)
       // tied to the same unverified-for-Instance channels, so skip them here too for consistency.
       if (useAffixes){
-        applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, lo.hero, context);
+        applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, lo.hero, context, lo.troopSplit);
       }
       results[lo.id] = { loadout: lo, isPrimary: isPrimary, hero: h, slots: heroResult };
     });
@@ -1619,7 +1652,7 @@ window.addEventListener('load', function () {
     heroes.forEach(function(h){ byDef[h.hero_definition_id] = h; });
 
     var html = '<div class="section-heading">Gear Recommender</div>';
-    html += '<div class="note-box"><strong>How this works:</strong> one flat priority list of (hero, job) loadouts — claims resolve strictly top-to-bottom across the whole list, so a hero ranked high always wins a contested item over anyone ranked lower, whatever job they’re doing. A hero’s <em>first</em> loadout in the list is scored against their actual currently-equipped gear; any later loadout for the same hero is a reserve kit built only from whatever bench is left (since only one loadout is ever physically worn at a time). Add or remove loadouts below, drag the priority with the arrows. Flat ATK/DEF/HP are scored at each item’s <strong>projected max level</strong>, not its current level — an under-leveled Legendary can legitimately beat an already-maxed Epic once you account for its higher ceiling (verified against real level-scaling data, gold text shows the projection when it differs from current). Percentage affixes don’t scale with level, so those stay on the item’s actual current roll. <strong>Instanced (Arena/Dungeon) loadouts score core ATK/DEF/HP only, no percentage affixes or set bonuses</strong> — those channels were verified for March combat specifically and we have no evidence they apply in Instance. <strong>Troop-specific stats (Infantry/Archer/Cavalry ATK/DEF/HP)</strong> are weighted by each hero’s affinity — full weight for their primary troop type, reduced for secondary, and mostly discounted for the troop type they don’t run at all. <strong>Real in-game sets</strong> (Gather, Conqueror, Warden, Dungeon, ...) reported in your export won’t be recommended away for a smaller percentage-affix gain — only for a genuine flat-stat upgrade or another piece of the same set. Treat picks as strong candidates to sanity-check, not gospel.</div>';
+    html += '<div class="note-box"><strong>How this works:</strong> one flat priority list of (hero, job) loadouts — claims resolve strictly top-to-bottom across the whole list, so a hero ranked high always wins a contested item over anyone ranked lower, whatever job they’re doing. A hero’s <em>first</em> loadout in the list is scored against their actual currently-equipped gear; any later loadout for the same hero is a reserve kit built only from whatever bench is left (since only one loadout is ever physically worn at a time). Add or remove loadouts below, drag the priority with the arrows. Flat ATK/DEF/HP are scored at each item’s <strong>projected max level</strong>, not its current level — an under-leveled Legendary can legitimately beat an already-maxed Epic once you account for its higher ceiling (verified against real level-scaling data, gold text shows the projection when it differs from current). Percentage affixes don’t scale with level, so those stay on the item’s actual current roll. <strong>Instanced (Arena/Dungeon) loadouts score core ATK/DEF/HP only, no percentage affixes or set bonuses</strong> — those channels were verified for March combat specifically and we have no evidence they apply in Instance. <strong>Troop-specific stats (Infantry/Archer/Cavalry ATK/DEF/HP)</strong> are weighted by the Infantry/Archer/Cavalry % split shown next to each offense/defense loadout above — that’s your actual planned march composition for that loadout, not a fixed hero rule, so edit it per loadout (it seeds from the hero’s affinity but you might run one hero 100% Cavalry and another 33/33/33 depending on the fight). <strong>Real in-game sets</strong> (Gather, Conqueror, Warden, Dungeon, ...) reported in your export won’t be recommended away for a smaller percentage-affix gain — only for a genuine flat-stat upgrade or another piece of the same set. Treat picks as strong candidates to sanity-check, not gospel.</div>';
 
     html += '<div class="loadout-add-row">' +
       '<select id="loadoutHeroSelect">' + heroes.map(function(h){
@@ -1637,12 +1670,27 @@ window.addEventListener('load', function () {
       var h = byDef[lo.hero];
       if (!h) return;
       var garrisonNote = GARRISON_PASSIVE_NOTES[lo.hero];
+      // Only offense/defense profiles score any troop-specific stat (Infantry/Archer/Cavalry
+      // ATK/DEF/HP) — gathering/support never touch TROOP_STAT_TYPE keys, so the split has no
+      // effect there and showing it would just be noise.
+      var usesTroopStats = Object.keys((ROLE_WEIGHTS[lo.profile] || {}).pct || {}).some(function(k){ return !!TROOP_STAT_TYPE[k]; });
+      var ts = lo.troopSplit || {Infantry:0, Archer:0, Cavalry:0};
+      var tsSum = (ts.Infantry||0) + (ts.Archer||0) + (ts.Cavalry||0);
+      var troopSplitHtml = usesTroopStats
+        ? '<span class="troop-split" title="March composition for this loadout — drives how much Infantry/Archer/Cavalry-specific gear stats actually count. Player-chosen per march, not fixed by hero.">' +
+            ['Infantry','Archer','Cavalry'].map(function(t){
+              return '<label class="ts-field"><span>' + t.slice(0,3) + '</span><input type="number" min="0" max="100" step="1" data-troop="' + t + '" value="' + (ts[t]||0) + '"></label>';
+            }).join('') +
+            '<span class="ts-total' + (tsSum===100 ? '' : ' bad') + '">' + tsSum + '%</span>' +
+          '</span>'
+        : '';
       html += '<div class="priority-item" data-loadout-id="' + lo.id + '">' +
         '<span class="rank">' + (idx+1) + '</span>' +
         '<span class="pname">' + h.hero_name + '</span>' +
         (garrisonNote ? '<span class="garrison-flag" title="' + garrisonNote.replace(/"/g,'&quot;') + '">🏠</span>' : '') +
         '<span class="profile-pill profile-' + lo.profile + '">' + PROFILE_LABEL[lo.profile] + '</span>' +
         (lo.context === "instanced" ? '<span class="dim" style="font-size:.72rem;">Instanced</span>' : '') +
+        troopSplitHtml +
         '<span class="pmoves"><button data-dir="up" title="Move up">▴</button><button data-dir="down" title="Move down">▾</button><button data-dir="remove" title="Remove">✕</button></span>' +
         '</div>';
     });
@@ -1784,14 +1832,18 @@ window.addEventListener('load', function () {
       var scored = wornCopies.map(function(it){
         var owner = wornMarch[it.item_id];
         var profile = (HEROES[owner.heroDefId] && HEROES[owner.heroDefId].profile) || "offense";
-        return {item: it, owner: owner, profile: profile, score: realItemScore(it, profile, true, owner.heroDefId)};
+        // Read the hero's actual planned composition off their march loadout when one exists,
+        // instead of guessing from affinity — that's the real number that should drive scoring.
+        var ownerLoadout = loadouts.filter(function(l){ return l.hero === owner.heroDefId && l.context === "march"; })[0];
+        var troopSplit = ownerLoadout ? ownerLoadout.troopSplit : null;
+        return {item: it, owner: owner, profile: profile, troopSplit: troopSplit, score: realItemScore(it, profile, true, owner.heroDefId, troopSplit)};
       });
       scored.sort(function(a,b){ return a.score - b.score; });
       var worst = scored[0];
       var best = benchCopies.reduce(function(a,b){
-        return realItemScore(a, worst.profile, true, worst.owner.heroDefId) > realItemScore(b, worst.profile, true, worst.owner.heroDefId) ? a : b;
+        return realItemScore(a, worst.profile, true, worst.owner.heroDefId, worst.troopSplit) > realItemScore(b, worst.profile, true, worst.owner.heroDefId, worst.troopSplit) ? a : b;
       });
-      var bestScore = realItemScore(best, worst.profile, true, worst.owner.heroDefId);
+      var bestScore = realItemScore(best, worst.profile, true, worst.owner.heroDefId, worst.troopSplit);
       if (bestScore > worst.score * 1.15){
         var sameAffixes = JSON.stringify(safeJSON(worst.item.affixes, [])) === JSON.stringify(safeJSON(best.affixes, []));
         var ws = equipStats(worst.item), bs = equipStats(best);
@@ -1880,7 +1932,7 @@ window.addEventListener('load', function () {
         var profileSel = target.querySelector('#loadoutProfileSelect');
         var contextSel = target.querySelector('#loadoutContextSelect');
         if (!heroSel || !profileSel || !contextSel) return;
-        loadouts.push({id:"L" + (nextLoadoutId++), hero:heroSel.value, profile:profileSel.value, context:contextSel.value});
+        loadouts.push({id:"L" + (nextLoadoutId++), hero:heroSel.value, profile:profileSel.value, context:contextSel.value, troopSplit: defaultTroopSplit(heroSel.value)});
         renderRoster();
       });
     }
@@ -1904,6 +1956,17 @@ window.addEventListener('load', function () {
         var tmp = loadouts[idx];
         loadouts[idx] = loadouts[swapWith];
         loadouts[swapWith] = tmp;
+        renderRoster();
+      });
+      priorityList.addEventListener('change', function(e){
+        var input = e.target.closest ? e.target.closest('input[data-troop]') : null;
+        if (!input) return;
+        var item = input.closest('.priority-item');
+        var loId = item.getAttribute('data-loadout-id');
+        var lo = loadouts.filter(function(l){ return l.id === loId; })[0];
+        if (!lo) return;
+        if (!lo.troopSplit) lo.troopSplit = {Infantry:0, Archer:0, Cavalry:0};
+        lo.troopSplit[input.getAttribute('data-troop')] = Math.max(0, Math.min(100, Number(input.value) || 0));
         renderRoster();
       });
     }
