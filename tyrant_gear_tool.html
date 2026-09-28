@@ -1352,7 +1352,13 @@ window.addEventListener('load', function () {
     if (Object.keys(claim.contexts).length === 0) delete claimedBenchIds[itemId];
   }
 
-  function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context){
+  // Picks the BEST-scoring name-matching copy, not just the first one in file order — a
+  // hero can own multiple physical copies of the same named piece (their own equipped one,
+  // plus stray unclaimed copies sitting on the shared bench), and those can differ a lot in
+  // quality/level. Preferring file order over score meant a low-quality loose bench copy
+  // could silently shadow the hero's own better-rolled equipped piece and make a genuine
+  // set-completion swap look not worth it.
+  function findSetPieceCandidate(pieceName, slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context, profile){
     var target = normName(pieceName);
     var matches = equip.filter(function(row){
       if (row.slot !== slot) return false;
@@ -1362,7 +1368,11 @@ window.addEventListener('load', function () {
       if (isBenchItemClaimed(claimedBenchIds, row.item_id, heroDefId, context)) return false;
       return true;
     });
-    return matches[0] || null;
+    if (matches.length === 0) return null;
+    matches.sort(function(a, b){
+      return realItemScore(b, profile, true, heroDefId) - realItemScore(a, profile, true, heroDefId);
+    });
+    return matches[0];
   }
 
   // After the naive best-per-slot pass, check whether this hero is exactly one piece away
@@ -1409,7 +1419,7 @@ window.addEventListener('load', function () {
         var piece = missing[i];
         if (!piece.slot) continue;
         var currentItem = currentBySlot[piece.slot];
-        var candidate = findSetPieceCandidate(piece.name, piece.slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context);
+        var candidate = findSetPieceCandidate(piece.name, piece.slot, wornIds, claimedBenchIds, currentItem, equip, heroDefId, context, profile);
         if (!candidate) continue;
 
         var existingPick = heroResult[piece.slot] ? heroResult[piece.slot].item : null;
