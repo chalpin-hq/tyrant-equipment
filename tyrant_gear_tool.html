@@ -532,8 +532,8 @@ window.addEventListener('load', function () {
     {name:"Prospector's Kit", pieces:["Master Miner's Helm","Merchant's Pouch","Miner's Pick"], context:"Gathering only", thresholds:{2:"Gather Speed +4%", 3:"Gather Speed +6%"}},
     {name:"Shadow of the Crypt", pieces:["Shadowsteel Blade","Wraith Helm","Crypt Warden's Plate","Phantom Greaves"], context:"Daily Dungeon only", thresholds:{2:"Hero DEF +3%", 4:"Hero DEF +6%, Hero HP +6%"}},
     {name:"Titanbreaker", pieces:["Titan Cleaver","Dragonscale Armor","World Ender's Crown","Earthshaker Boots"], context:"Weekly Boss only", thresholds:{2:"Hero HP +3%", 4:"Hero HP +6%, Hero ATK +6%"}},
-    {name:"Conqueror's Regalia", pieces:["Conqueror's Fang","Conqueror's Shroud","Conqueror's Cowl","Conqueror's Pendant","Conqueror's Stalkers","Conqueror's Signet"], context:"PvP Offense", thresholds:{2:"+0.4% PvP ATK", 4:"+0.6% PvP ATK", 6:"+1.0% PvP ATK"}},
-    {name:"Warden's Vigil", pieces:["Warden's Wardsword","Warden's Aegis","Warden's Greaves","Warden's Greathelm","Warden's Band","Warden's Bulwark"], context:"PvP Defense", thresholds:{2:"+0.4% PvP DEF", 4:"+0.6% PvP DEF", 6:"+1.0% PvP DEF"}}
+    {name:"Conqueror's Regalia", pieces:["Conqueror's Fang","Conqueror's Shroud","Conqueror's Cowl","Conqueror's Pendant","Conqueror's Stalkers","Conqueror's Signet"], context:"PvP Offense", thresholds:{2:"+0.4% PvP ATK (CONFIRMED 2026-09-28)", 4:"+1.0% PvP ATK (CONFIRMED 2026-09-28)", 6:"+2.0% PvP ATK (CONFIRMED 2026-09-28)"}},
+    {name:"Warden's Vigil", pieces:["Warden's Wardsword","Warden's Aegis","Warden's Greaves","Warden's Greathelm","Warden's Band","Warden's Bulwark"], context:"PvP Defense", thresholds:{2:"+0.4% PvP DEF (CONFIRMED 2026-09-29)", 4:"+1.0% PvP DEF (CONFIRMED 2026-09-29)", 6:"+2.0% PvP DEF (CONFIRMED 2026-09-29)"}}
   ];
 
   // Numeric translation of SETS' thresholds into resolved_stats keys the recommender
@@ -544,8 +544,8 @@ window.addEventListener('load', function () {
   var SET_BONUS_TIERS = {
     "Prospector's Kit":  { 2:{gatherSpeed:0.04}, 3:{gatherSpeed:0.06} },
     "Beastlord's Hunt":  { 2:{attackPercent:0.03}, 4:{attackPercent:0.06, healthPercent:0.06} },
-    "Conqueror's Regalia": { 2:{pvpAttack:0.004}, 4:{pvpAttack:0.006}, 6:{pvpAttack:0.010} },
-    "Warden's Vigil":    { 2:{pvpDefense:0.004}, 4:{pvpDefense:0.006}, 6:{pvpDefense:0.010} }
+    "Conqueror's Regalia": { 2:{pvpAttack:0.004}, 4:{pvpAttack:0.010}, 6:{pvpAttack:0.020} },
+    "Warden's Vigil":    { 2:{pvpDefense:0.004}, 4:{pvpDefense:0.010}, 6:{pvpDefense:0.020} }
   };
   // Which hero profiles a given set's bonus is actually relevant to — keeps e.g. a
   // gathering hero from being nudged toward Beastlord's Hunt off a stray HP overlap.
@@ -1005,9 +1005,13 @@ window.addEventListener('load', function () {
   // rather than being misapplied to March. monsterDamage/monsterDamageReduction stay in,
   // since Monster Den is confirmed World-Battle (March) combat.
   var ROLE_WEIGHTS = {
+    // Overall Gather Speed and node Yield pay off no matter which resource you're currently
+    // prioritizing; a single-resource speed bonus (Food/Wood/Stone/Gold) only pays off when
+    // that's the resource in question. Since priorities shift over time, the all-rounder
+    // stats are weighted well above the narrow ones rather than just slightly (per user).
     gathering: {
       atk:0.05, def:0.02, hp:0.15,
-      pct:{gatherSpeed:10, gatherSpeedFood:9, gatherSpeedWood:9, gatherSpeedStone:9, gatherSpeedGold:9, nodeYield:8, marchSpeed:4, marchCapacity:3, healthPercent:2}
+      pct:{gatherSpeed:16, nodeYield:9, gatherSpeedFood:5, gatherSpeedWood:5, gatherSpeedStone:5, gatherSpeedGold:5, marchSpeed:4, marchCapacity:3, healthPercent:2}
     },
     offense: {
       atk:0.5, def:0.03, hp:0.15,
@@ -1281,17 +1285,19 @@ window.addEventListener('load', function () {
   // Kit etc) — same tier structure (piece-count -> bonus%), but keyed by the CSV's per-hero
   // set name/id instead of matching specific item names.
   //   - Gather: CONFIRMED by the user — full 6-piece set = +10% Gather Speed.
-  //   - Warden / Conqueror: UNCONFIRMED — the user's working guess is that these mirror the
-  //     hand-researched Warden's Vigil / Conqueror's Regalia tiers (2pc=0.4%, 4pc=0.6%,
-  //     6pc=1.0%, on pvpDefense/pvpAttack respectively). Treat these two as provisional until
-  //     verified in-game; flagged with confirmed:false so it's easy to find and revisit.
+  //   - Conqueror: FULLY CONFIRMED by the user (2026-09-28, via the Kael Cowl-vs-Warcrown
+  //     case, read directly off Kael's in-game set display) — 2pc=+0.4%, 4pc=+1.0%,
+  //     6pc=+2.0% PvP Attack. Back-loaded: the step from 6->5 pieces (which reads the 4pc
+  //     tier) costs a full 1.0pp, not the ~0.4-0.8pp originally guessed.
+  //   - Warden: FULLY CONFIRMED by the user (2026-09-29) — mirrors Conqueror's curve exactly:
+  //     2pc=+0.4%, 4pc=+1.0%, 6pc=+2.0% pvpDefense.
   // Any real set name not listed here falls back to the structural rule: don't recommend
   // breaking a real, currently-intact multi-piece set unless the replacement is a genuine
   // flat-stat upgrade, not just a marginally-better affix.
   var REAL_SET_BONUS = {
     "Gather":    { stat: "gatherSpeed", tiers: { 6: 0.10 }, confirmed: true },
-    "Warden":    { stat: "pvpDefense",  tiers: { 2: 0.004, 4: 0.006, 6: 0.010 }, confirmed: false },
-    "Conqueror": { stat: "pvpAttack",   tiers: { 2: 0.004, 4: 0.006, 6: 0.010 }, confirmed: false }
+    "Warden":    { stat: "pvpDefense",  tiers: { 2: 0.004, 4: 0.010, 6: 0.020 }, confirmed: true },
+    "Conqueror": { stat: "pvpAttack",   tiers: { 2: 0.004, 4: 0.010, 6: 0.020 }, confirmed: true }
   };
   function realSetInfo(row, context){
     var idKey = context === "instanced" ? "instanced_set_id" : "march_set_id";
