@@ -271,7 +271,7 @@
   }
   .priority-list{display:flex; flex-direction:column; gap:6px; margin-bottom:16px; max-width:560px;}
   .priority-item{
-    display:flex; align-items:center; gap:10px; padding:7px 10px; flex-wrap:wrap;
+    display:flex; align-items:center; gap:10px; padding:7px 10px;
     background:var(--panel); border:1px solid var(--border); border-radius:6px; font-size:.85rem;
   }
   .priority-item .rank{width:22px; color:var(--gold-bright); font-weight:700; text-align:right; flex-shrink:0;}
@@ -291,15 +291,11 @@
     border-radius:4px; width:24px; height:24px; cursor:pointer; font-size:.8rem; line-height:1;
   }
   .priority-item .pmoves button:hover{color:var(--gold-bright); border-color:var(--gold);}
-  .troop-split{
-    display:flex; align-items:center; gap:10px; font-size:.72rem; color:var(--text-dim); cursor:help;
-    flex-basis:100%; margin:4px 0 0 32px; padding-top:6px; border-top:1px dashed var(--border);
-  }
-  .ts-field{display:flex; align-items:center; gap:4px;}
-  .ts-field span{min-width:22px;}
+  .troop-split{display:flex; align-items:center; gap:6px; flex-shrink:0; font-size:.68rem; color:var(--text-dim); cursor:help;}
+  .ts-field{display:flex; align-items:center; gap:3px;}
   .ts-field input{
     width:46px; background:var(--panel2); border:1px solid var(--border); color:var(--text);
-    border-radius:4px; padding:3px 4px; font-size:.78rem; font-variant-numeric:tabular-nums;
+    border-radius:4px; padding:2px 3px; font-size:.72rem; font-variant-numeric:tabular-nums;
   }
   .ts-field input:focus{outline:1px solid var(--gold);}
   .ts-total{font-weight:700; width:36px; text-align:right; font-variant-numeric:tabular-nums;}
