@@ -1682,7 +1682,13 @@ window.addEventListener('load', function () {
           if (isBenchItemClaimed(claimedBenchIds, row.item_id, lo.hero, context)) return false;
           if (currentIsSetProtected){
             var rowInfo = realSetInfo(row, context);
-            var sameSet = rowInfo && currentSetInfo && rowInfo.id === currentSetInfo.id && rowInfo.ownerHeroId === currentSetInfo.ownerHeroId;
+            // march_set_id looks to be a per-hero PRESET identifier, not a shared item-type
+            // id — a free bench copy of the exact same named item will never carry it, even
+            // though swapping to a better-rolled copy of the identical piece obviously can't
+            // break the set (the set cares what's in the slot, not the physical serial
+            // number). So a same-name match is always treated as staying in the set too.
+            var sameSet = (rowInfo && currentSetInfo && rowInfo.id === currentSetInfo.id && rowInfo.ownerHeroId === currentSetInfo.ownerHeroId)
+              || normName(row.name) === normName(currentItem.name);
             if (!sameSet){
               var flatDelta = flatStatScore(row, profile) - flatStatScore(currentItem, profile);
               var setLoss = realSetBonusLossScore(currentSetInfo, setSizeBySlot[slot], profile);
