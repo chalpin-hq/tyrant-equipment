@@ -1553,6 +1553,56 @@ window.addEventListener('load', function () {
     return best.key;
   }
 
+  // Named-item sets (Prospector's Kit, Beastlord's Hunt, Conqueror's Regalia, Warden's Vigil)
+  // used to only be protected AFTER the fact, by applySetBonusRefinement trying to swap a
+  // missing piece back in — which meant a big-enough percentage affix on an unrelated item
+  // could break a completed set outright before that refinement ever got a chance to fire
+  // (confirmed 2026-09-29: Pathfinder's Blade's ~9.8% March Speed broke Cassian's complete
+  // 3/3 Prospector's Kit for a net score gain, even though the refinement pass's protection
+  // math said no — the naive pass had already discarded Miner's Pick before that ran). Per
+  // user, a percentage-affix gain alone — however large — should never be enough to break an
+  // already-complete named set; only a genuine flat-stat upgrade should. This computes, for
+  // each slot, the score that set completion is worth losing (same shape as realSetBonusLossScore/
+  // setSizeBySlot below, but keyed by item NAME match against SETS instead of a real CSV set id),
+  // so the naive per-slot filter can gate on it directly instead of just hoping the refinement
+  // pass catches it afterward.
+  function namedSetProtectionBySlot(currentBySlot, profile){
+    var bySlot = {};
+    SETS.forEach(function(set){
+      var tiers = SET_BONUS_TIERS[set.name];
+      if (!tiers) return;
+      var relevantProfiles = SET_BONUS_PROFILES[set.name] || [];
+      if (relevantProfiles.indexOf(profile) === -1) return;
+      var pieceMeta = set.pieces.map(function(pname){
+        var meta = lookupItemMeta(pname);
+        return {name: pname, slot: meta ? meta.slot.toUpperCase() : null};
+      });
+      var isOwned = function(p){
+        var r = p.slot && currentBySlot[p.slot];
+        return !!(r && normName(r.name) === normName(p.name));
+      };
+      var owned = pieceMeta.filter(isOwned).length;
+      if (owned < 2) return;
+      var tierLevels = Object.keys(tiers).map(Number).sort(function(a,b){ return a - b; });
+      var achievedTier = tierLevels.filter(function(t){ return t <= owned; }).pop();
+      if (!achievedTier) return;
+      var afterLossTier = tierLevels.filter(function(t){ return t <= owned - 1; }).pop();
+      var w = ROLE_WEIGHTS[profile] || ROLE_WEIGHTS.offense;
+      var lossScore = 0;
+      Object.keys(tiers[achievedTier]).forEach(function(k){
+        var delta = (tiers[achievedTier][k] || 0) - (afterLossTier ? (tiers[afterLossTier][k] || 0) : 0);
+        if (delta <= 0) return;
+        lossScore += delta * (w.pct[k] || 0) * 150000;
+      });
+      if (lossScore <= 0) return;
+      pieceMeta.forEach(function(p){
+        if (!isOwned(p)) return;
+        if (!bySlot[p.slot] || lossScore > bySlot[p.slot]) bySlot[p.slot] = lossScore;
+      });
+    });
+    return bySlot;
+  }
+
   function computeRecommendations(){
     var heroes = rosterState.heroes;
     var equip = rosterState.equip;
@@ -1613,6 +1663,7 @@ window.addEventListener('load', function () {
       });
 
       var useAffixes = context !== "instanced";
+      var namedSetLossBySlot = useAffixes ? namedSetProtectionBySlot(currentBySlot, profile) : {};
       var heroResult = {};
       CSV_SLOTS.forEach(function(slot){
         var currentItem = currentBySlot[slot];
@@ -1623,6 +1674,7 @@ window.addEventListener('load', function () {
         // Instanced set could get wrongly blocked here with no refinement pass to undo it,
         // since that pass only ever runs for march (see the `if (useAffixes)` call below).
         var currentIsSetProtected = useAffixes && currentItem && setSizeBySlot[slot] >= 2;
+        var namedSetLoss = namedSetLossBySlot[slot] || 0;
         var candidates = equip.filter(function(row){
           if (row.slot !== slot) return false;
           if (currentItem && row.item_id === currentItem.item_id) return true;
@@ -1636,6 +1688,12 @@ window.addEventListener('load', function () {
               var setLoss = realSetBonusLossScore(currentSetInfo, setSizeBySlot[slot], profile);
               if (flatDelta <= setLoss) return false;
             }
+          }
+          // A completed named-item set (Prospector's Kit etc) shouldn't be breakable by a
+          // percentage-affix gain alone, however large — only a genuine flat-stat upgrade.
+          if (namedSetLoss > 0 && !(currentItem && normName(row.name) === normName(currentItem.name))){
+            var namedFlatDelta = flatStatScore(row, profile) - flatStatScore(currentItem, profile);
+            if (namedFlatDelta <= namedSetLoss) return false;
           }
           return true;
         });
