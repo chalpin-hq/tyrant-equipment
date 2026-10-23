@@ -1041,9 +1041,13 @@ window.addEventListener('load', function () {
       atk:0.05, def:0.02, hp:0.15,
       pct:{gatherSpeed:16, nodeYield:9, gatherSpeedFood:5, gatherSpeedWood:5, gatherSpeedStone:5, gatherSpeedGold:5, marchSpeed:4, marchCapacity:3, healthPercent:2}
     },
+    // firstRoundDamage cut from 4 to 1 (2026-10-23, per user): it only adds damage in round 1,
+    // and map fights now run many rounds with armies joining mid-fight, so it's worth far less
+    // than an all-round Attack bonus. Speed keeps a higher weight — Lyris's gatherer raids are
+    // short fights where round 1 matters.
     offense: {
       atk:0.5, def:0.03, hp:0.15,
-      pct:{pvpAttack:14, pvpDamageMultiplier:12, attackPercent:8, infantryAttack:6, archerAttack:6, cavalryAttack:6, firstRoundDamage:4, healthPercent:2}
+      pct:{pvpAttack:14, pvpDamageMultiplier:12, attackPercent:8, infantryAttack:6, archerAttack:6, cavalryAttack:6, firstRoundDamage:1, healthPercent:2}
     },
     defense: {
       atk:0.05, def:0.05, hp:0.5,
