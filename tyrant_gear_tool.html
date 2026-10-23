@@ -1252,8 +1252,17 @@ window.addEventListener('load', function () {
     try { return JSON.parse(str); } catch(e){ return fallback; }
   }
 
+  // The game has renamed some items since the reference catalog was built (confirmed from the
+  // 2026-10-23 export by equipment_definition_id) — map the new names back so named-set
+  // matching (Prospector's Kit) still recognises the pieces.
+  var NAME_ALIASES = {
+    "prospector's pick": "miner's pick",
+    "prospector's pouch": "merchant's pouch",
+    "prospector's lamphelm": "master miner's helm"
+  };
   function normName(n){
-    return (n || "").toLowerCase().replace(/^the\s+/, "").replace(/\bof the\b/, "of").replace(/\s+/g, " ").trim();
+    var key = (n || "").toLowerCase().replace(/^the\s+/, "").replace(/\bof the\b/, "of").replace(/\s+/g, " ").trim();
+    return NAME_ALIASES[key] || key;
   }
   var ITEM_BY_NORM_NAME = {};
   ITEMS.forEach(function(it){ ITEM_BY_NORM_NAME[normName(it.name)] = it; });
@@ -1525,8 +1534,17 @@ window.addEventListener('load', function () {
   // from a verified set-bonus tier (Prospector's Kit, Beastlord's Hunt, etc.) and, if swapping
   // in the missing set piece scores higher than the naive pick once the set bonus is counted,
   // make that swap. Only sets in SET_BONUS_TIERS are considered — see the note there.
+  // Repeats until nothing changes, since each pass only adds one piece — a hero starting from
+  // an empty or set-less loadout can then be walked all the way up to a complete set (e.g.
+  // Lamphelm -> +Pouch -> +Pick for the full Prospector's Kit), not just one tier.
   function applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId, context, troopSplit){
+    for (var pass = 0; pass < CSV_SLOTS.length; pass++){
+      if (!setBonusRefinementPass(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId, context, troopSplit)) break;
+    }
+  }
+  function setBonusRefinementPass(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, heroDefId, context, troopSplit){
     var w = ROLE_WEIGHTS[profile] || ROLE_WEIGHTS.offense;
+    var changedAny = false;
     SETS.forEach(function(set){
       var tiers = SET_BONUS_TIERS[set.name];
       if (!tiers) return;
@@ -1569,9 +1587,12 @@ window.addEventListener('load', function () {
         if (!candidate) continue;
 
         var existingPick = heroResult[piece.slot] ? heroResult[piece.slot].item : null;
-        var existingScore = existingPick ? realItemScore(existingPick, profile, true, heroDefId, troopSplit) : 0;
-        var candidateScore = realItemScore(candidate, profile, true, heroDefId, troopSplit) + deltaScore;
-        if (candidateScore <= existingScore) continue;
+        // Same standard as namedSetProtectionBySlot (per user): a percentage-affix gain alone
+        // never outweighs completing a set tier — only a genuine flat-stat gap does. Comparing
+        // full scores here let e.g. Pathfinder's Blade's ~10% March Speed keep Thorek off the
+        // 3rd Prospector's Kit piece when building from an empty loadout.
+        var flatGap = existingPick ? flatStatScore(existingPick, profile) - flatStatScore(candidate, profile) : -Infinity;
+        if (flatGap >= deltaScore) continue;
 
         if (existingPick && (!currentItem || existingPick.item_id !== currentItem.item_id)){
           unclaimBenchItem(claimedBenchIds, existingPick.item_id, heroDefId, context);
@@ -1587,9 +1608,11 @@ window.addEventListener('load', function () {
           changed: !currentItem || currentItem.item_id !== candidate.item_id,
           why: set.name + " " + nextTier + "/" + set.pieces.length + " (" + bonusText + ")"
         };
+        changedAny = true;
         break;
       }
     });
+    return changedAny;
   }
 
   // Which single factor — flat ATK/DEF/HP or a percentage affix — contributed the most to
