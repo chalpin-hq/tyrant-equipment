@@ -289,26 +289,28 @@ Cavalry, Valeria Cavalry · Infantry, Thorek Infantry · Archer.
 | 1 | Dawnbringer Valeria | Lead damage dealer; same gear in Dungeon/Arena | Offense |
 | 2 | Bloodreaver Kael | Damage dealer (Cavalry); same gear in Dungeon/Arena | Offense |
 | 3 | Deadeye Kestrel | Damage dealer (Archer burst) | Offense |
-| 4 | Moonveil Seraphina | Stationed while safe — Healing Speed gear only | Healer |
-| 5 | Forgefist Durgan | Stationed while safe — Training Speed gear only | Training (new) |
-| 6 | Bastion Hadrian | Front-line tank, walls in a siege; same gear as Dungeon/WB tank | Defence |
-| 7 | Silvertongue Aldric | Front-line tank, walls in a siege | Defence |
-| 8 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
-| 9 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
-| 10 | Gatherer Elena | Gathering (prefers food) | Gathering |
-| 11 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
-| 12 | Stonewall Borin | Gathering (usually stone) | Gathering |
-| 13 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
-| 14 | Ironwall Theron | Backup defender / reinforce allies | Defence |
-| 15 | Ironheart Roderic | Backup attacker / reinforce allies | Offense |
-| 16 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; all-Cavalry | Speed |
-| 17 | Forgefist Durgan | Arena Shatter | Defence (Instanced) |
-| 18 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
+| 4 | Bastion Hadrian | Front-line tank, walls in a siege; same gear as Dungeon/WB tank | Defence |
+| 5 | Silvertongue Aldric | Front-line tank, walls in a siege | Defence |
+| 6 | Moonveil Seraphina | Stationed while safe — Healing Speed gear first | Healer |
+| 7 | Forgefist Durgan | Stationed while safe — Training Speed gear first | Training (new) |
+| 8 | Moonveil Seraphina | Fill every slot without a buff item | Defence (fill) |
+| 9 | Forgefist Durgan | Fill every slot without a buff item | Defence (fill) |
+| 10 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
+| 11 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
+| 12 | Gatherer Elena | Gathering (prefers food) | Gathering |
+| 13 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
+| 14 | Stonewall Borin | Gathering (usually stone) | Gathering |
+| 15 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
+| 16 | Ironwall Theron | Backup defender / reinforce allies | Defence |
+| 17 | Ironheart Roderic | Backup attacker / reinforce allies | Offense |
+| 18 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; all-Cavalry | Speed |
+| 19 | Forgefist Durgan | Arena Shatter | Defence (Instanced) |
+| 20 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
 
-Seraphina and Durgan rank right behind the attackers because their buffs are
-constant (~99% of the time). Like gatherers, they only take items carrying
-their own stat, so ranking them high never takes other gear from the heroes
-below them.
+Seraphina's and Durgan's buffs are constant (~99% of the time), so they sit
+right behind the two tanks. Each first takes items carrying their own buff
+stat, then a fill pass equips every remaining slot with the best defence gear
+left, so they're fully equipped for a surprise attack.
 
 ### Open items
 1. Elena's max-power set (#6) outranks every gatherer, so it can take

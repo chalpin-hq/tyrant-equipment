@@ -1175,15 +1175,18 @@ window.addEventListener('load', function () {
     // Map combat now fields up to 5 units at once: Hadrian + Aldric hold the front line (and
     // the walls in a siege) while Valeria, Kael and Kestrel deal damage. Theron and Roderic are
     // backups for injured heroes / ally reinforcement. Seraphina and Durgan stay stationed at
-    // home while the castle is safe, and rank right behind the attackers so they never miss
-    // good Healing/Training Speed gear — they only take items with that stat (ONLY_STAT_GEAR).
+    // home while the castle is safe, ranked right behind the two tanks: each first takes the
+    // best Healing/Training Speed gear (ONLY_STAT_GEAR), then a fill pass equips every other
+    // slot with defence gear so they're ready for a surprise attack.
     {hero:"champion_legendary", profile:"offense",   context:"march"},
     {hero:"bloodreaver_epic",   profile:"offense",   context:"march"},
     {hero:"deadeye_epic",       profile:"offense",   context:"march"},
-    {hero:"healer_rare",        profile:"support",   context:"march"},
-    {hero:"taskmaster_epic",    profile:"training",  context:"march"},
     {hero:"bastion_epic",       profile:"defense",   context:"march"},
     {hero:"emissary_legendary", profile:"defense",   context:"march"},
+    {hero:"healer_rare",        profile:"support",   context:"march"},
+    {hero:"taskmaster_epic",    profile:"training",  context:"march"},
+    {hero:"healer_rare",        profile:"defense",   context:"march", fill:true},
+    {hero:"taskmaster_epic",    profile:"defense",   context:"march", fill:true},
     {hero:"starter_gatherer",   profile:"power",     context:"instanced"},
     {hero:"overseer_epic",      profile:"gathering", context:"march"},
     {hero:"starter_gatherer",   profile:"gathering", context:"march"},
@@ -1199,7 +1202,7 @@ window.addEventListener('load', function () {
 
   var loadouts = [];
   function initLoadouts(){
-    loadouts = DEFAULT_LOADOUTS.map(function(l, i){ return {id:"L" + i, hero:l.hero, profile:l.profile, context:l.context || "march", troopSplit: defaultTroopSplit(l.hero)}; });
+    loadouts = DEFAULT_LOADOUTS.map(function(l, i){ return {id:"L" + i, hero:l.hero, profile:l.profile, context:l.context || "march", fill: !!l.fill, troopSplit: defaultTroopSplit(l.hero)}; });
   }
   initLoadouts();
   var nextLoadoutId = loadouts.length;
@@ -1691,6 +1694,38 @@ window.addEventListener('load', function () {
         if (itemOwner[id] !== lo.hero) wornIds[id] = true;
       });
 
+      // Fill pass (2026-10-23, per user): tops up every slot a buff-only loadout (ONLY_STAT_GEAR)
+      // left without a buff item, so stationed heroes are never caught half-equipped by a
+      // surprise attack. Ranked lower than the buff pass, so it only competes for this gear from
+      // that point in the list down. Results merge into the hero's buff-pass card.
+      if (lo.fill){
+        var base = null;
+        loadouts.forEach(function(other){
+          if (!base && other.hero === lo.hero && other.context === context && !other.fill && results[other.id]) base = results[other.id];
+        });
+        if (!base) return;
+        var equippedBySlot = {};
+        safeJSON(h[itemIdsField], []).forEach(function(id){ var r = equipById[id]; if (r) equippedBySlot[r.slot] = r; });
+        var fillAffixes = context !== "instanced";
+        CSV_SLOTS.forEach(function(slot){
+          if (base.slots[slot]) return;
+          var currentItem = equippedBySlot[slot];
+          var candidates = equip.filter(function(row){
+            if (row.slot !== slot) return false;
+            if (currentItem && row.item_id === currentItem.item_id) return true;
+            if (wornIds[row.item_id]) return false;
+            return !isBenchItemClaimed(claimedBenchIds, row.item_id, lo.hero, context);
+          });
+          if (!candidates.length) return;
+          candidates.sort(function(a,b){ return realItemScore(b, profile, fillAffixes, lo.hero, lo.troopSplit) - realItemScore(a, profile, fillAffixes, lo.hero, lo.troopSplit); });
+          var best = candidates[0];
+          var changed = !currentItem || best.item_id !== currentItem.item_id;
+          if (changed) claimBenchItem(claimedBenchIds, best.item_id, lo.hero, context);
+          base.slots[slot] = { item: best, changed: changed, fill: true, why: fillAffixes ? topContributingStat(best, profile, lo.hero, lo.troopSplit) : null };
+        });
+        return;
+      }
+
       // Only the hero's FIRST loadout in a given context (march or instanced) compares against
       // what's actually equipped there — any later loadout for the same hero+context is a
       // reserve kit, built purely from bench.
@@ -1702,6 +1737,14 @@ window.addEventListener('load', function () {
       if (isPrimary){
         var currentIds = safeJSON(h[itemIdsField], []);
         currentIds.forEach(function(id){ var r = equipById[id]; if (r) currentBySlot[r.slot] = r; });
+        // A buff-only loadout with a fill pass only keeps currently-worn items that carry its
+        // buff stat — anything else is left for the fill pass to keep or replace on its merits.
+        var hasFillPass = loadouts.some(function(o){ return o.fill && o.hero === lo.hero && o.context === context; });
+        if (hasFillPass && ONLY_STAT_GEAR[profile]){
+          Object.keys(currentBySlot).forEach(function(slot){
+            if (!hasAnyStat(currentBySlot[slot], ONLY_STAT_GEAR[profile])) delete currentBySlot[slot];
+          });
+        }
       }
 
       // How many of the hero's currently-equipped pieces (in this context) share a real
@@ -1826,7 +1869,7 @@ window.addEventListener('load', function () {
         '<span class="rank">' + (idx+1) + '</span>' +
         '<span class="pname">' + h.hero_name + '</span>' +
         (garrisonNote ? '<span class="garrison-flag" title="' + garrisonNote.replace(/"/g,'&quot;') + '">🏠</span>' : '') +
-        '<span class="profile-pill profile-' + lo.profile + '">' + PROFILE_LABEL[lo.profile] + '</span>' +
+        '<span class="profile-pill profile-' + lo.profile + '">' + PROFILE_LABEL[lo.profile] + (lo.fill ? ' — fill remaining slots' : '') + '</span>' +
         (lo.context === "instanced" ? '<span class="dim" style="font-size:.72rem;">Instanced</span>' : '') +
         (MIRROR_TO_INSTANCED[lo.hero] && lo.context === "march" ? '<span class="dim" style="font-size:.72rem;" title="' + MIRROR_TO_INSTANCED[lo.hero] + '">+ Dungeon/Arena</span>' : '') +
         troopSplitHtml +
@@ -1887,7 +1930,7 @@ window.addEventListener('load', function () {
             '<span class="dim">Lv' + entry.item.level + ' Q' + entry.item.quality_percent + '% — A' + s.atk + ' D' + s.def + ' H' + s.hp + '</span>' +
             projectedNote +
             badge +
-            (whyLabel ? '<span class="rec-why">best ' + whyLabel + '</span>' : '') +
+            (whyLabel ? '<span class="rec-why">' + (entry.fill ? 'no buff item — best ' : 'best ') + whyLabel + '</span>' : (entry.fill ? '<span class="rec-why">no buff item — filled</span>' : '')) +
             '</div>';
         });
         html += '</div>';
