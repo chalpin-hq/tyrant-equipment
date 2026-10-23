@@ -227,84 +227,66 @@ mechanically (untested now that the Arena team uses only one tank).
 ## 6. Role assignment — 16 heroes (2026-10-23)
 
 Three new heroes joined: **Silvertongue Aldric** (`emissary_legendary`,
-Legendary, "Support"), **Dawnbringer Valeria** (`champion_legendary`,
-Legendary, PvE) and **Goldvein Thorek** (`overseer_epic`, Epic, "Utility").
-The game now labels heroes with a category (Support, Utility, ...). Troop
-affinity for the three new heroes hasn't been recorded yet.
+Legendary, "Support", Infantry · Cavalry), **Dawnbringer Valeria**
+(`champion_legendary`, Legendary) and **Goldvein Thorek** (`overseer_epic`,
+Epic, "Utility"). The game now labels heroes with a category (Support,
+Utility, ...). Valeria's and Thorek's troop affinity isn't recorded yet.
 
 What their screenshots show:
 - **Aldric:** every skill bonus is PvP-only — Army Attack +9%, Army Defense
-  +7.2%, Damage Multiplier +7.2% (plus a small Infantry ATK/DEF skill). A PvP
-  army buffer.
+  +7.2%, Damage Multiplier +7.2%. They buff the whole march, so he leads.
 - **Valeria:** every skill bonus is PvE-only, Daily Dungeon-only or
-  Arena-only — Army Attack/Defense/Health (PvE), Damage Multiplier (Dungeon,
-  Arena), Hero Attack (Arena). Base DEF only 4.8K against 52.8K ATK, so she
-  can't take hits herself.
-- **Thorek:** Gather Speed skill +14.4% and Gold Gathering skill +3.6%,
-  Building Speed +4.5%. His +9.5% Stone Gathering comes only from gear.
+  Arena-only. Base DEF only 4.8K against 52.8K ATK. She can still help in
+  PvP: her raw ATK converts into army-wide Hero command % (Phase 1).
+- **Thorek:** Gather Speed skill +14.4%, Gold Gathering skill +3.6%.
 
-### Gathering: one specialist per resource
+### Approach: one hero, one job, one set
 
-Five gatherers. Each sticks to one resource, and the recommender now has a
-profile per resource (`gatherFood`/`gatherWood`/`gatherStone`/`gatherGold`)
-that weights that resource's speed as highly as overall Gather Speed and
-ignores the other three. That steers single-resource gear to the right hero.
+The March-vs-Instanced split made gear decisions too convoluted. Each hero now
+gets one set. The game lets a hero wear the same items in both their March
+and Instanced loadouts, so Kael, Hadrian and Valeria copy their set into
+Dungeon/Arena. **Elena is the only exception**: a gathering set plus a
+separate max-power Dungeon/Weekly Boss set.
 
-| Resource | Hero | Why |
-|---|---|---|
-| Gold | Goldvein Thorek | Gold Gathering skill |
-| Food | Gatherer Elena | Food specialist |
-| Wood | Leafsong Aelindra | Wood specialist |
-| Stone | Stonewall Borin | No hero has a stone skill, so the edge has to come from Stone Gathering gear; Borin's defence makes him the safest to leave on a node |
-| Flex | Battlehorn Cassian | Covers whichever resource is short; Aldric now covers the support/commander niche |
+**Gathering isn't specialised per resource.** Single-resource gear bonuses
+are small (+1–3%) next to overall Gather Speed (Thorek: +14.4% skill, +10%
+Gather set), and heroes need to switch nodes. All five gatherers share one
+Gathering setting; Thorek/Elena/Aelindra lean gold/food/wood from their
+skills. **Gatherers only take items with a gathering stat** (Gather Speed,
+any single-resource speed, Yield, March Capacity), so their high rank can't
+take combat gear from heroes below them.
 
-Forgefist Durgan comes **off** gathering: his Training Speed only works while
-he's garrisoned, so every march cost him that passive.
+**Hero power** fits roughly `0.95 × ATK + 1.0 × DEF + 0.135 × HP` across all
+16 heroes (within ~10% except Aldric). Elena's "Max power" setting uses
+these weights.
 
-### Full breakdown
+### Priority list (higher wins a contested item)
 
-Rank = position in the recommender's priority list (higher rank wins a
-contested item). Gear-claim order matters most for the bottom half.
-
-| Hero | Lv / Power | Role | Recommender loadouts (rank) |
+| # | Hero | Job | Setting |
 |---|---|---|---|
-| Bloodreaver Kael | 50 / 175K | PvP Offense lead (Cavalry) + Dungeon/WB & Arena DPS | Offense march (1), Offense instanced (18) |
-| Deadeye Kestrel | 49 / 155K | PvP Offense (Archer burst) | Offense march (2) |
-| Silvertongue Aldric | 39 / 168K | **New** — PvP support / army buffer | Offense march (3) |
-| Bastion Hadrian | 50 / 204K | Garrison (sole defender) + Instanced tank | Defence march (4), Defence instanced (19) |
-| Moonveil Seraphina | 50 / 121K | Garrison healer (Healing Speed only works garrisoned) | Defence march (5) |
-| Ironwall Theron | 48 / 110K | War-reinforcement standby ("Reinforce" set) | Defence march (6) |
-| Ironheart Roderic | 39 / 82K | PvP Offense (Infantry) | Offense march (7) |
-| Swiftarrow Lyris | 44 / 68K | PvP Offense / Monster Den (Archer) | Offense march (8) |
-| Warlord Marcus | 43 / 51K | PvP Offense / Monster Den (Archer) | Offense march (9) |
-| Dawnbringer Valeria | 33 / 71K | **New** — PvE: Monster Den lead; Dungeon DPS candidate | PvE march (10) |
-| Goldvein Thorek | 31 / 86K | **New** — Gold gathering | Gathering: Gold (11) |
-| Gatherer Elena | 50 / 56K | Food gathering + Dungeon/WB loot | Gathering: Food (12), Defence instanced (21) |
-| Leafsong Aelindra | 42 / 74K | Wood gathering | Gathering: Wood (13) |
-| Stonewall Borin | 38 / 68K | Stone gathering | Gathering: Stone (14), Defence reserve (17) |
-| Battlehorn Cassian | 39 / 62K | Flex gathering | Gathering flex (15), Defence reserve (16) |
-| Forgefist Durgan | 39 / 86K | Garrison (Training Speed) + Arena Shatter | Defence instanced (20) — no march loadout |
+| 1 | Silvertongue Aldric | Main PvP attacker | Offense |
+| 2 | Bloodreaver Kael | PvP attacker (Cavalry); same gear in Dungeon/Arena | Offense |
+| 3 | Deadeye Kestrel | PvP attacker (Archer burst) | Offense |
+| 4 | Bastion Hadrian | Garrison defender; same gear as Dungeon/Weekly Boss tank | Defence |
+| 5 | Dawnbringer Valeria | Damage dealer; one set for Dungeon, Arena, on-map | Offense |
+| 6 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
+| 7 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
+| 8 | Gatherer Elena | Gathering (prefers food) | Gathering |
+| 9 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
+| 10 | Stonewall Borin | Gathering (usually stone) | Gathering |
+| 11 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
+| 12 | Moonveil Seraphina | Healer — Healing Speed first | Healer |
+| 13 | Ironheart Roderic | PvP attacker (Infantry) | Offense |
+| 14 | Ironwall Theron | Reinforces allies in war | Defence |
+| 15 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; run all-Cavalry | Speed (new) |
+| 16 | Forgefist Durgan | Arena Shatter-enabler; stays home for Training Speed | Defence (Instanced) |
+| 17 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
 
-New `pve` profile (Valeria) scores Monster Damage, Army/troop Attack,
-Monster Damage Reduction and First Round Damage — the Monster Den stats that
-were taken out of the offense/defense profiles on 2026-09-29.
-
-### Open questions — gear possibly tied up for nothing
-
-1. **Six offense marches.** Kael, Kestrel, Aldric, Roderic, Lyris and Marcus
-   all hold a full march kit. If you don't actually field all six, the bottom
-   ones (Marcus at 51K, Lyris at 68K) are holding up to 12 items that could
-   be fed into upgrades instead.
-2. **Durgan's march gear.** He still wears 5 march items but no longer has a
-   march job. The recommender treats worn gear as his, so those items are
-   locked away from everyone else until you take them off him.
-3. **Cassian and Borin's Defence reserve kits** (ranks 16–17). These claim
-   bench items for a second job. Drop them if neither hero ever actually
-   fills in on defence.
-4. **Valeria has no gear.** At rank 10 she only gets what the PvP heroes
-   leave. Move her up if Monster Den matters more than the lower PvP slots.
-5. **Valeria in Dungeon.** Her Instance abilities aren't recorded yet, so
-   swapping her in for Kael's Dungeon DPS slot is untested.
-6. **Troop affinity** for Aldric, Valeria and Thorek isn't recorded. It
-   matters for Aldric and Valeria, whose troop-specific stats are scored. The
-   default split is Infantry-led and can be edited per loadout.
+### Open items
+1. Elena's max-power set (#6) outranks every gatherer, so it can take
+   gathering items Thorek and the others wanted. Those items still count for
+   Elena's own gathering set, since one hero can wear an item in both.
+2. Durgan's Training Speed works at home, but his only set is Arena, which
+   scores raw stats only — Training Speed gear isn't counted anywhere.
+3. A rarity-based "command cap" hasn't been verified — worth a screenshot if
+   one exists.

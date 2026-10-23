@@ -280,8 +280,10 @@
   .profile-pill{font-size:.68rem; padding:2px 8px; border-radius:10px; border:1px solid var(--border); color:var(--text-dim); flex-shrink:0;}
   .garrison-flag{font-size:.85rem; cursor:help; flex-shrink:0; opacity:.85;}
   .garrison-note{font-size:.76rem; color:var(--gold-bright); background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:6px 9px; margin-top:6px;}
-  .profile-pill.profile-gathering,.profile-pill.profile-gatherFood,.profile-pill.profile-gatherWood,.profile-pill.profile-gatherStone,.profile-pill.profile-gatherGold{border-color:#5a9a5a; color:#8fd08f;}
-  .profile-pill.profile-pve{border-color:#c0a05a; color:#e6cf8a;}
+  .profile-pill.profile-gathering{border-color:#5a9a5a; color:#8fd08f;}
+  .profile-pill.profile-speed{border-color:#5ab0c0; color:#8fdce6;}
+  .profile-pill.profile-power{border-color:#c0a05a; color:#e6cf8a;}
+  .mirror-note{font-size:.72rem; color:var(--text-dim); font-style:italic;}
   .profile-pill.profile-offense{border-color:#c06a5a; color:#e69a8a;}
   .profile-pill.profile-defense{border-color:#5a7ac0; color:#8fb0e6;}
   .profile-pill.profile-support{border-color:#b08fd0; color:#d0b8ee;}
@@ -561,8 +563,8 @@ window.addEventListener('load', function () {
   // Which hero profiles a given set's bonus is actually relevant to — keeps e.g. a
   // gathering hero from being nudged toward Beastlord's Hunt off a stray HP overlap.
   var SET_BONUS_PROFILES = {
-    "Prospector's Kit": ["gathering","gatherFood","gatherWood","gatherStone","gatherGold"],
-    "Beastlord's Hunt": ["offense","pve"],
+    "Prospector's Kit": ["gathering"],
+    "Beastlord's Hunt": ["offense"],
     "Conqueror's Regalia": ["offense"],
     "Warden's Vigil": ["defense","support"]
   };
@@ -579,7 +581,7 @@ window.addEventListener('load', function () {
         {slot:"Ring", pick:"Ring of Power (Legendary)", why:"March Speed + Gather Speed guar.", alt:"Gold Talisman (Rare)"},
         {slot:"Accessory", pick:"Heart of the World (Legendary)", why:"March Speed + Gather Speed guar.", alt:"Merchant's Pouch (Uncommon) — Prospector's Kit piece"}
       ],
-      hero:{name:"One specialist per resource: Goldvein Thorek (Gold), Gatherer Elena (Food), Leafsong Aelindra (Wood), Stonewall Borin (Stone), Battlehorn Cassian (flex)", why:"Thorek, Elena and Aelindra each lean toward one resource, so send them to that node and give them that resource's gear. No hero has a stone skill, so the stone gatherer's edge has to come from Stone Gathering gear — Borin's defence makes him the safest one to leave on a node. Cassian covers whichever resource is short."},
+      hero:{name:"Goldvein Thorek, Gatherer Elena, Leafsong Aelindra, Stonewall Borin, Battlehorn Cassian", why:"All five use one Gathering setting: overall Gather Speed and Yield first, single-resource bonuses only as a tiebreaker, so any of them can cover any node. Thorek leans gold, Elena food and Aelindra wood from their skills — send them there when convenient."},
       note:"Run the Prospector's Kit trio together (Master Miner's Helm + Merchant's Pouch + Miner's Pick) rather than mixing one set piece in — the 3pc +6% Gather Speed bonus is lost if split."
     },
     {
@@ -972,26 +974,26 @@ window.addEventListener('load', function () {
   // hero_definition_id from the game's own export, which is stable across re-exports.
   // "profile" drives the gear recommender's scoring weights.
   var HEROES = {
-    starter_gatherer:   {name:"Gatherer Elena",      specialty:"Gather Speed",  affinity:"Cavalry · Infantry", role:"Food gathering specialist + Dungeon/WB loot (Instanced)", profile:"gatherFood"},
-    starter_warlord:    {name:"Warlord Marcus",       specialty:"Attack Bonus",  affinity:"Archer · Infantry",  role:"PvP Offense / Monster Den (Archer)", profile:"offense"},
+    starter_gatherer:   {name:"Gatherer Elena",      specialty:"Gather Speed",  affinity:"Cavalry · Infantry", role:"Gathering (prefers food) + separate max-power Dungeon/Weekly Boss set for the loot bonus", profile:"gathering"},
+    starter_warlord:    {name:"Warlord Marcus",       specialty:"Attack Bonus",  affinity:"Archer · Infantry",  role:"Not used — bragging power, leftovers only", profile:"offense"},
     garrison_theron:    {name:"Ironwall Theron",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"War-reinforcement standby / PvP Defense", profile:"defense"},
     healer_rare:        {name:"Moonveil Seraphina",   specialty:"Healing Speed", affinity:"Archer · Infantry",  role:"Garrison support / healer", profile:"support"},
-    raider_common:      {name:"Swiftarrow Lyris",     specialty:"March Speed",   affinity:"Archer · Cavalry",   role:"PvP Offense / Monster Den (sustained, Archer)", profile:"offense"},
-    harvester_uncommon: {name:"Leafsong Aelindra",    specialty:"Gather Speed",  affinity:"Cavalry · Archer",   role:"Wood gathering specialist", profile:"gatherWood"},
-    guardian_common:    {name:"Stonewall Borin",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Stone gathering (no hero has a stone skill — gear-driven; tanky enough to hold a node)", profile:"gatherStone"},
+    raider_common:      {name:"Swiftarrow Lyris",     specialty:"March Speed",   affinity:"Archer · Cavalry",   role:"Speed — fastest unit on the map, for raiding gatherers and routing (run all-Cavalry)", profile:"speed"},
+    harvester_uncommon: {name:"Leafsong Aelindra",    specialty:"Gather Speed",  affinity:"Cavalry · Archer",   role:"Gathering (prefers wood)", profile:"gathering"},
+    guardian_common:    {name:"Stonewall Borin",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Gathering (usually covers stone — no hero has a stone skill)", profile:"gathering"},
     bloodreaver_epic:   {name:"Bloodreaver Kael",     specialty:"Attack Bonus",  affinity:"Cavalry · Infantry", role:"PvP Offense / Monster Den (Cavalry) + Dungeon/WB & Arena DPS", profile:"offense"},
-    commander_rare:     {name:"Battlehorn Cassian",   specialty:"Leadership",    affinity:"Archer · Infantry",  role:"Flex gathering — whichever resource is short (Aldric now covers the support/commander niche)", profile:"gathering"},
+    commander_rare:     {name:"Battlehorn Cassian",   specialty:"Leadership",    affinity:"Archer · Infantry",  role:"Gathering — whichever resource is short (Aldric now covers the support/commander niche)", profile:"gathering"},
     bastion_epic:       {name:"Bastion Hadrian",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Garrison (sole defender) + Dungeon/WB & Arena tank", profile:"defense"},
     warlord_rare:       {name:"Ironheart Roderic",    specialty:"Attack Bonus",  affinity:"Infantry · Cavalry", role:"PvP Offense (Infantry)", profile:"offense"},
-    taskmaster_epic:    {name:"Forgefist Durgan",     specialty:"Training Speed",affinity:"Infantry · Cavalry", role:"Garrison (Training Speed) + Arena Shatter-enabler (Instanced)", profile:"defense"},
+    taskmaster_epic:    {name:"Forgefist Durgan",     specialty:"Training Speed",affinity:"Infantry · Cavalry", role:"Arena Shatter-enabler only (stays home for Training Speed)", profile:"defense"},
     deadeye_epic:       {name:"Deadeye Kestrel",      specialty:"Attack Bonus",  affinity:"Archer · Cavalry",   role:"PvP Offense / Monster Den (Archer burst)", profile:"offense"},
     // Added 2026-10-23 from screenshots. The game now labels heroes with a category (Support,
     // Utility, ...) — used as the specialty text here since their specialty names weren't
-    // captured. Troop affinity not yet recorded for any of the three, so it's left blank
-    // (default troop split seeds Infantry-led; edit per loadout).
-    overseer_epic:      {name:"Goldvein Thorek",      specialty:"Utility (Gathering)", affinity:"", role:"Gold gathering specialist (Gold Gathering skill)", profile:"gatherGold"},
-    emissary_legendary: {name:"Silvertongue Aldric",  specialty:"Support (PvP)", affinity:"", role:"PvP support — PvP-only Army ATK/DEF + Damage Multiplier skills", profile:"offense"},
-    champion_legendary: {name:"Dawnbringer Valeria",  specialty:"PvE",           affinity:"", role:"PvE — PvE-only army skills, Daily Dungeon/Arena damage (very low DEF)", profile:"pve"}
+    // captured. Aldric's affinity is per the user; Thorek's and Valeria's aren't recorded yet,
+    // so they're left blank (default troop split seeds Infantry-led; edit per loadout).
+    overseer_epic:      {name:"Goldvein Thorek",      specialty:"Utility (Gathering)", affinity:"", role:"Gathering (prefers gold — Gold Gathering skill)", profile:"gathering"},
+    emissary_legendary: {name:"Silvertongue Aldric",  specialty:"Support (PvP)", affinity:"Infantry · Cavalry", role:"Main PvP attacker — PvP-only Army ATK/DEF + Damage Multiplier skills buff the whole march", profile:"offense"},
+    champion_legendary: {name:"Dawnbringer Valeria",  specialty:"PvE",           affinity:"", role:"Damage dealer — one set for Dungeon, Arena and on-map fights (skills are PvE/Dungeon/Arena-only; raw ATK still feeds Hero command in PvP)", profile:"offense"}
   };
 
   // Heroes whose specialty only functions while garrisoned (stationed home, not out on a
@@ -1027,9 +1029,9 @@ window.addEventListener('load', function () {
   // actually runs their heroes today (PvP-focused), and they don't currently build a
   // dedicated PvE/Monster-Den set. A single Monster-Den-only affix was outscoring a full
   // rarity-tier flat-stat gap (Wolfhide Vest over Plate Armor on Borin's Defence loadout)
-  // for a stat that's irrelevant to the fight this gear is actually used in. Those stats now
-  // live in their own "pve" profile (2026-10-23, for Dawnbringer Valeria) rather than being
-  // folded back into offense/defense.
+  // for a stat that's irrelevant to the fight this gear is actually used in. If a real PvE
+  // build gets set up later, these belong in a new profile, not folded back into offense/
+  // defense.
   var ROLE_WEIGHTS = {
     // Overall Gather Speed and node Yield pay off no matter which resource you're currently
     // prioritizing; a single-resource speed bonus (Food/Wood/Stone/Gold) only pays off when
@@ -1039,15 +1041,6 @@ window.addEventListener('load', function () {
       atk:0.05, def:0.02, hp:0.15,
       pct:{gatherSpeed:16, nodeYield:9, gatherSpeedFood:5, gatherSpeedWood:5, gatherSpeedStone:5, gatherSpeedGold:5, marchSpeed:4, marchCapacity:3, healthPercent:2}
     },
-    // Single-resource specialists (2026-10-23): each gatherer sticks to one resource, so its
-    // own resource's speed is worth as much as overall Gather Speed and the other three are
-    // worth nothing — which lets e.g. stone gear flow to the stone gatherer instead of
-    // whoever happens to have the most generic Gather Speed. "gathering" above stays as the
-    // flex/all-rounder profile.
-    gatherFood:  { atk:0.05, def:0.02, hp:0.15, pct:{gatherSpeed:16, gatherSpeedFood:16,  nodeYield:9, marchSpeed:4, marchCapacity:3, healthPercent:2} },
-    gatherWood:  { atk:0.05, def:0.02, hp:0.15, pct:{gatherSpeed:16, gatherSpeedWood:16,  nodeYield:9, marchSpeed:4, marchCapacity:3, healthPercent:2} },
-    gatherStone: { atk:0.05, def:0.02, hp:0.15, pct:{gatherSpeed:16, gatherSpeedStone:16, nodeYield:9, marchSpeed:4, marchCapacity:3, healthPercent:2} },
-    gatherGold:  { atk:0.05, def:0.02, hp:0.15, pct:{gatherSpeed:16, gatherSpeedGold:16,  nodeYield:9, marchSpeed:4, marchCapacity:3, healthPercent:2} },
     offense: {
       atk:0.5, def:0.03, hp:0.15,
       pct:{pvpAttack:14, pvpDamageMultiplier:12, attackPercent:8, infantryAttack:6, archerAttack:6, cavalryAttack:6, firstRoundDamage:4, healthPercent:2}
@@ -1060,10 +1053,18 @@ window.addEventListener('load', function () {
       atk:0.1, def:0.05, hp:0.35,
       pct:{healingSpeed:14, healthPercent:8, pvpDefense:3, gatherSpeed:2}
     },
-    // World PvE (Monster Den). Dungeon stats stay out — Dungeon is Instanced, see above.
-    pve: {
-      atk:0.5, def:0.03, hp:0.15,
-      pct:{monsterDamage:14, attackPercent:8, infantryAttack:6, archerAttack:6, cavalryAttack:6, monsterDamageReduction:4, firstRoundDamage:4, healthPercent:2}
+    // Fastest unit on the map (Lyris, 2026-10-23) — sent to raid gatherers / route, so March
+    // Speed dominates, with some attack so she can actually win the fight once she arrives.
+    speed: {
+      atk:0.3, def:0.03, hp:0.1,
+      pct:{marchSpeed:16, cavalryAttack:4, attackPercent:4, pvpAttack:4, firstRoundDamage:3}
+    },
+    // Hero power as high as possible (Elena's Dungeon/Weekly Boss set, 2026-10-23). Weights fit
+    // to the 16 real heroes' hero_power vs their ATK/DEF/HP: power ~= 0.95*ATK + 1.0*DEF +
+    // 0.135*HP (within ~10% for all but Aldric). Only used Instanced, so no pct affixes.
+    power: {
+      atk:0.95, def:1.0, hp:0.135,
+      pct:{}
     }
   };
 
@@ -1101,7 +1102,8 @@ window.addEventListener('load', function () {
   // A few heroes have a strong enough default habit to be worth overriding the generic
   // 60/30/10 affinity seed with (per user, 2026-09-29): Kael is run 100% Cavalry as standard.
   var HERO_DEFAULT_TROOP_SPLIT = {
-    bloodreaver_epic: {Infantry:0, Archer:0, Cavalry:100}
+    bloodreaver_epic: {Infantry:0, Archer:0, Cavalry:100},
+    raider_common: {Infantry:0, Archer:0, Cavalry:100}
   };
   function defaultTroopSplit(heroDefId){
     if (HERO_DEFAULT_TROOP_SPLIT[heroDefId]){
@@ -1125,7 +1127,25 @@ window.addEventListener('load', function () {
     return heroDefId ? troopStatMultiplier(heroDefId, statKey) : 1;
   }
 
-  var PROFILE_LABEL = {gathering:"Gathering (flex)", gatherFood:"Gathering: Food", gatherWood:"Gathering: Wood", gatherStone:"Gathering: Stone", gatherGold:"Gathering: Gold", offense:"Offense", defense:"Defence", support:"Support", pve:"PvE"};
+  var PROFILE_LABEL = {gathering:"Gathering", offense:"Offense", defense:"Defence", support:"Healer", speed:"Speed", power:"Max power"};
+
+  // Gatherers only take gear that actually helps gathering (2026-10-23, per user) — they sit
+  // high in the list to protect gathering gear, and without this an empty gatherer slot would
+  // grab the best raw-stat item instead, starving combat heroes ranked below them.
+  var GATHER_GEAR_STATS = ["gatherSpeed","gatherSpeedFood","gatherSpeedWood","gatherSpeedStone","gatherSpeedGold","nodeYield","marchCapacity"];
+  function hasGatherStat(row){
+    var stats = safeJSON(row.resolved_stats, {});
+    return GATHER_GEAR_STATS.some(function(k){ return (stats[k] || 0) > 0; });
+  }
+
+  // One set per hero (2026-10-23): these heroes also do Dungeon/Arena but don't get a separate
+  // Instanced loadout — the game lets one hero wear the same items in both, so they just copy
+  // their march set across. Elena is the exception, with her own max-power Instanced set.
+  var MIRROR_TO_INSTANCED = {
+    bloodreaver_epic: "Wear this same gear in Kael's Dungeon/Arena set.",
+    bastion_epic: "Wear this same gear in Hadrian's Dungeon/Weekly Boss set.",
+    champion_legendary: "Wear this same gear in Valeria's Dungeon/Arena set."
+  };
 
   // Single flat, editable priority list of (hero, job) loadouts — set by the user (2026-09-21),
   // reflecting actual kit fit and war-tested lessons, not raw hero_power. Claims resolve strictly
@@ -1140,29 +1160,25 @@ window.addEventListener('load', function () {
   // so these must never be conflated into one generic "worn" pool (that bug hid a Legendary
   // helm from every recommendation because it was worn only in another hero's instanced slot).
   var DEFAULT_LOADOUTS = [
+    // One set per hero (2026-10-23, per user) — Kael/Hadrian/Valeria copy their set into
+    // Dungeon/Arena (MIRROR_TO_INSTANCED). Only Elena keeps two: gathering + max-power Dungeon.
+    {hero:"emissary_legendary", profile:"offense",   context:"march"},
     {hero:"bloodreaver_epic",   profile:"offense",   context:"march"},
     {hero:"deadeye_epic",       profile:"offense",   context:"march"},
-    {hero:"emissary_legendary", profile:"offense",   context:"march"},
     {hero:"bastion_epic",       profile:"defense",   context:"march"},
-    {hero:"healer_rare",        profile:"defense",   context:"march"},
-    {hero:"garrison_theron",    profile:"defense",   context:"march"},
+    {hero:"champion_legendary", profile:"offense",   context:"march"},
+    {hero:"starter_gatherer",   profile:"power",     context:"instanced"},
+    {hero:"overseer_epic",      profile:"gathering", context:"march"},
+    {hero:"starter_gatherer",   profile:"gathering", context:"march"},
+    {hero:"harvester_uncommon", profile:"gathering", context:"march"},
+    {hero:"guardian_common",    profile:"gathering", context:"march"},
+    {hero:"commander_rare",     profile:"gathering", context:"march"},
+    {hero:"healer_rare",        profile:"support",   context:"march"},
     {hero:"warlord_rare",       profile:"offense",   context:"march"},
-    {hero:"raider_common",      profile:"offense",   context:"march"},
-    {hero:"starter_warlord",    profile:"offense",   context:"march"},
-    {hero:"champion_legendary", profile:"pve",       context:"march"},
-    // Five gatherers, one per resource plus a flex (2026-10-23). Durgan dropped out — his
-    // Training Speed only works garrisoned, so gathering cost him that passive.
-    {hero:"overseer_epic",      profile:"gatherGold",  context:"march"},
-    {hero:"starter_gatherer",   profile:"gatherFood",  context:"march"},
-    {hero:"harvester_uncommon", profile:"gatherWood",  context:"march"},
-    {hero:"guardian_common",    profile:"gatherStone", context:"march"},
-    {hero:"commander_rare",     profile:"gathering",   context:"march"},
-    {hero:"commander_rare",     profile:"defense",   context:"march"},
-    {hero:"guardian_common",    profile:"defense",   context:"march"},
-    {hero:"bloodreaver_epic",   profile:"offense",   context:"instanced"},
-    {hero:"bastion_epic",       profile:"defense",   context:"instanced"},
+    {hero:"garrison_theron",    profile:"defense",   context:"march"},
+    {hero:"raider_common",      profile:"speed",     context:"march"},
     {hero:"taskmaster_epic",    profile:"defense",   context:"instanced"},
-    {hero:"starter_gatherer",   profile:"defense",   context:"instanced"}
+    {hero:"starter_warlord",    profile:"offense",   context:"march"}
   ];
 
   var loadouts = [];
@@ -1705,6 +1721,7 @@ window.addEventListener('load', function () {
           if (currentItem && row.item_id === currentItem.item_id) return true;
           if (wornIds[row.item_id]) return false;
           if (isBenchItemClaimed(claimedBenchIds, row.item_id, lo.hero, context)) return false;
+          if (profile === "gathering" && !hasGatherStat(row)) return false;
           if (currentIsSetProtected){
             var rowInfo = realSetInfo(row, context);
             // march_set_id looks to be a per-hero PRESET identifier, not a shared item-type
@@ -1795,6 +1812,7 @@ window.addEventListener('load', function () {
         (garrisonNote ? '<span class="garrison-flag" title="' + garrisonNote.replace(/"/g,'&quot;') + '">🏠</span>' : '') +
         '<span class="profile-pill profile-' + lo.profile + '">' + PROFILE_LABEL[lo.profile] + '</span>' +
         (lo.context === "instanced" ? '<span class="dim" style="font-size:.72rem;">Instanced</span>' : '') +
+        (MIRROR_TO_INSTANCED[lo.hero] && lo.context === "march" ? '<span class="dim" style="font-size:.72rem;" title="' + MIRROR_TO_INSTANCED[lo.hero] + '">+ Dungeon/Arena</span>' : '') +
         troopSplitHtml +
         '<span class="pmoves"><button data-dir="up" title="Move up">▴</button><button data-dir="down" title="Move down">▾</button><button data-dir="remove" title="Remove">✕</button></span>' +
         '</div>';
@@ -1824,7 +1842,8 @@ window.addEventListener('load', function () {
         var r = recs[lo.id];
         html += '<div class="rec-card"><div class="rec-card-header"><span class="rprofile">' + PROFILE_LABEL[lo.profile] +
           (lo.context === "instanced" ? ' · Instanced' : ' · March') +
-          '</span>' + (r.isPrimary ? '<span class="badge b2">PRIMARY</span>' : '<span class="badge b3">RESERVE</span>') + '</div>';
+          '</span>' + (r.isPrimary ? '<span class="badge b2">PRIMARY</span>' : '<span class="badge b3">RESERVE</span>') + '</div>' +
+          (MIRROR_TO_INSTANCED[lo.hero] && lo.context === "march" ? '<div class="mirror-note">' + MIRROR_TO_INSTANCED[lo.hero] + '</div>' : '');
         CSV_SLOTS.forEach(function(slot){
           var entry = r.slots[slot];
           var icon = SLOT_ICONS[SLOT_LABEL[slot]] || "";
