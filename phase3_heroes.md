@@ -228,13 +228,14 @@ mechanically (untested now that the Arena team uses only one tank).
 
 Three new heroes joined: **Silvertongue Aldric** (`emissary_legendary`,
 Legendary, "Support", Infantry · Cavalry), **Dawnbringer Valeria**
-(`champion_legendary`, Legendary) and **Goldvein Thorek** (`overseer_epic`,
-Epic, "Utility"). The game now labels heroes with a category (Support,
-Utility, ...). Valeria's and Thorek's troop affinity isn't recorded yet.
+(`champion_legendary`, Legendary, Cavalry · Infantry) and **Goldvein Thorek**
+(`overseer_epic`, Epic, "Utility", Infantry · Archer). The game now labels
+heroes with a category (Support, Utility, ...).
 
 What their screenshots show:
 - **Aldric:** every skill bonus is PvP-only — Army Attack +9%, Army Defense
-  +7.2%, Damage Multiplier +7.2%. They buff the whole march, so he leads.
+  +7.2%, Damage Multiplier +7.2%. They apply in any PvP fight, defending
+  included.
 - **Valeria:** every skill bonus is PvE-only, Daily Dungeon-only or
   Arena-only. Base DEF only 4.8K against 52.8K ATK. She can still help in
   PvP: her raw ATK converts into army-wide Hero command % (Phase 1).
@@ -260,33 +261,64 @@ take combat gear from heroes below them.
 16 heroes (within ~10% except Aldric). Elena's "Max power" setting uses
 these weights.
 
+### Map combat: front line + damage dealers (2026-10-23)
+
+Map combat now fields up to 5 units at once (RTS-style). No-gear stats
+settled who goes where: Aldric's base is DEF-heavy (29.4K ATK / 48.5K DEF /
+180K HP at Lv39), Valeria's is pure attack (56K ATK / 5.1K DEF at Lv33,
+already near Kael's 63.9K at Lv50).
+
+- **Front line:** Hadrian + Aldric. They also go on the walls in a siege.
+- **Damage:** Valeria, Kael, Kestrel.
+- **Backups:** Theron (defence) and Roderic (attack) replace injured heroes
+  or reinforce allies.
+- **Stationed at home while safe:** Seraphina (Healing Speed) and Durgan
+  (Training Speed). There are only 2 station slots.
+
+An item adds the same flat stats whoever wears it, so high base stats don't
+make gear worth more on a hero — they mark who your best fighters are, and
+gear goes to whoever actually leads the fights.
+
+Troop affinity read off the in-game hero list icons: Aldric Infantry ·
+Cavalry, Valeria Cavalry · Infantry, Thorek Infantry · Archer.
+
 ### Priority list (higher wins a contested item)
 
 | # | Hero | Job | Setting |
 |---|---|---|---|
-| 1 | Silvertongue Aldric | Main PvP attacker | Offense |
-| 2 | Bloodreaver Kael | PvP attacker (Cavalry); same gear in Dungeon/Arena | Offense |
-| 3 | Deadeye Kestrel | PvP attacker (Archer burst) | Offense |
-| 4 | Bastion Hadrian | Garrison defender; same gear as Dungeon/Weekly Boss tank | Defence |
-| 5 | Dawnbringer Valeria | Damage dealer; one set for Dungeon, Arena, on-map | Offense |
-| 6 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
-| 7 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
-| 8 | Gatherer Elena | Gathering (prefers food) | Gathering |
-| 9 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
-| 10 | Stonewall Borin | Gathering (usually stone) | Gathering |
-| 11 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
-| 12 | Moonveil Seraphina | Healer — Healing Speed first | Healer |
-| 13 | Ironheart Roderic | PvP attacker (Infantry) | Offense |
-| 14 | Ironwall Theron | Reinforces allies in war | Defence |
-| 15 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; run all-Cavalry | Speed (new) |
-| 16 | Forgefist Durgan | Arena Shatter-enabler; stays home for Training Speed | Defence (Instanced) |
-| 17 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
+| 1 | Dawnbringer Valeria | Lead damage dealer; same gear in Dungeon/Arena | Offense |
+| 2 | Bloodreaver Kael | Damage dealer (Cavalry); same gear in Dungeon/Arena | Offense |
+| 3 | Deadeye Kestrel | Damage dealer (Archer burst) | Offense |
+| 4 | Bastion Hadrian | Front-line tank, walls in a siege; same gear as Dungeon/WB tank | Defence |
+| 5 | Silvertongue Aldric | Front-line tank, walls in a siege | Defence |
+| 6 | Moonveil Seraphina | Stationed while safe — Healing Speed gear first | Healer |
+| 7 | Forgefist Durgan | Stationed while safe — Training Speed gear first | Training (new) |
+| 8 | Moonveil Seraphina | Fill every slot without a buff item | Defence (fill) |
+| 9 | Forgefist Durgan | Fill every slot without a buff item | Defence (fill) |
+| 10 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
+| 11 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
+| 12 | Gatherer Elena | Gathering (prefers food) | Gathering |
+| 13 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
+| 14 | Stonewall Borin | Gathering (usually stone) | Gathering |
+| 15 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
+| 16 | Ironwall Theron | Backup defender / reinforce allies | Defence |
+| 17 | Ironheart Roderic | Backup attacker / reinforce allies | Offense |
+| 18 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; all-Cavalry | Speed |
+| 19 | Forgefist Durgan | Arena Shatter | Defence (Instanced) |
+| 20 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
+
+Seraphina's and Durgan's buffs are constant (~99% of the time), so they sit
+right behind the two tanks. Each first takes items carrying their own buff
+stat, then a fill pass equips every remaining slot with the best defence gear
+left, so they're fully equipped for a surprise attack.
 
 ### Open items
 1. Elena's max-power set (#6) outranks every gatherer, so it can take
    gathering items Thorek and the others wanted. Those items still count for
    Elena's own gathering set, since one hero can wear an item in both.
-2. Durgan's Training Speed works at home, but his only set is Arena, which
-   scores raw stats only — Training Speed gear isn't counted anywhere.
+2. Durgan's home set assumes the march set is what counts while he's
+   stationed — unverified.
 3. A rarity-based "command cap" hasn't been verified — worth a screenshot if
    one exists.
+4. Valeria's projected Lv50 stats are a guess — another level's stats would
+   pin down her growth.
