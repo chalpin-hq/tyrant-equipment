@@ -221,3 +221,72 @@ mechanically (untested now that the Arena team uses only one tank).
 4. Gather Speed and Training Speed specialty scaling/stacking rules (additive
    vs. multiplicative, same open question as Phase 2's economy stats) still
    unverified — low stakes, non-combat.
+
+---
+
+## 6. Role assignment — 16 heroes (2026-10-23)
+
+Three new heroes joined: **Silvertongue Aldric** (`emissary_legendary`,
+Legendary, "Support", Infantry · Cavalry), **Dawnbringer Valeria**
+(`champion_legendary`, Legendary) and **Goldvein Thorek** (`overseer_epic`,
+Epic, "Utility"). The game now labels heroes with a category (Support,
+Utility, ...). Valeria's and Thorek's troop affinity isn't recorded yet.
+
+What their screenshots show:
+- **Aldric:** every skill bonus is PvP-only — Army Attack +9%, Army Defense
+  +7.2%, Damage Multiplier +7.2%. They buff the whole march, so he leads.
+- **Valeria:** every skill bonus is PvE-only, Daily Dungeon-only or
+  Arena-only. Base DEF only 4.8K against 52.8K ATK. She can still help in
+  PvP: her raw ATK converts into army-wide Hero command % (Phase 1).
+- **Thorek:** Gather Speed skill +14.4%, Gold Gathering skill +3.6%.
+
+### Approach: one hero, one job, one set
+
+The March-vs-Instanced split made gear decisions too convoluted. Each hero now
+gets one set. The game lets a hero wear the same items in both their March
+and Instanced loadouts, so Kael, Hadrian and Valeria copy their set into
+Dungeon/Arena. **Elena is the only exception**: a gathering set plus a
+separate max-power Dungeon/Weekly Boss set.
+
+**Gathering isn't specialised per resource.** Single-resource gear bonuses
+are small (+1–3%) next to overall Gather Speed (Thorek: +14.4% skill, +10%
+Gather set), and heroes need to switch nodes. All five gatherers share one
+Gathering setting; Thorek/Elena/Aelindra lean gold/food/wood from their
+skills. **Gatherers only take items with a gathering stat** (Gather Speed,
+any single-resource speed, Yield, March Capacity), so their high rank can't
+take combat gear from heroes below them.
+
+**Hero power** fits roughly `0.95 × ATK + 1.0 × DEF + 0.135 × HP` across all
+16 heroes (within ~10% except Aldric). Elena's "Max power" setting uses
+these weights.
+
+### Priority list (higher wins a contested item)
+
+| # | Hero | Job | Setting |
+|---|---|---|---|
+| 1 | Silvertongue Aldric | Main PvP attacker | Offense |
+| 2 | Bloodreaver Kael | PvP attacker (Cavalry); same gear in Dungeon/Arena | Offense |
+| 3 | Deadeye Kestrel | PvP attacker (Archer burst) | Offense |
+| 4 | Bastion Hadrian | Garrison defender; same gear as Dungeon/Weekly Boss tank | Defence |
+| 5 | Dawnbringer Valeria | Damage dealer; one set for Dungeon, Arena, on-map | Offense |
+| 6 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
+| 7 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
+| 8 | Gatherer Elena | Gathering (prefers food) | Gathering |
+| 9 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
+| 10 | Stonewall Borin | Gathering (usually stone) | Gathering |
+| 11 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
+| 12 | Moonveil Seraphina | Healer — Healing Speed first | Healer |
+| 13 | Ironheart Roderic | PvP attacker (Infantry) | Offense |
+| 14 | Ironwall Theron | Reinforces allies in war | Defence |
+| 15 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; run all-Cavalry | Speed (new) |
+| 16 | Forgefist Durgan | Arena Shatter-enabler; stays home for Training Speed | Defence (Instanced) |
+| 17 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
+
+### Open items
+1. Elena's max-power set (#6) outranks every gatherer, so it can take
+   gathering items Thorek and the others wanted. Those items still count for
+   Elena's own gathering set, since one hero can wear an item in both.
+2. Durgan's Training Speed works at home, but his only set is Arena, which
+   scores raw stats only — Training Speed gear isn't counted anywhere.
+3. A rarity-based "command cap" hasn't been verified — worth a screenshot if
+   one exists.
