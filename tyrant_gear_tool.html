@@ -281,6 +281,7 @@
   .garrison-flag{font-size:.85rem; cursor:help; flex-shrink:0; opacity:.85;}
   .garrison-note{font-size:.76rem; color:var(--gold-bright); background:var(--panel2); border:1px solid var(--border); border-radius:6px; padding:6px 9px; margin-top:6px;}
   .profile-pill.profile-gathering{border-color:#5a9a5a; color:#8fd08f;}
+  .profile-pill.profile-training{border-color:#b08fd0; color:#d0b8ee;}
   .profile-pill.profile-speed{border-color:#5ab0c0; color:#8fdce6;}
   .profile-pill.profile-power{border-color:#c0a05a; color:#e6cf8a;}
   .mirror-note{font-size:.72rem; color:var(--text-dim); font-style:italic;}
@@ -985,7 +986,7 @@ window.addEventListener('load', function () {
     commander_rare:     {name:"Battlehorn Cassian",   specialty:"Leadership",    affinity:"Archer · Infantry",  role:"Gathering — whichever resource is short (Aldric now covers the support/commander niche)", profile:"gathering"},
     bastion_epic:       {name:"Bastion Hadrian",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Front-line tank on the map, on the walls in a siege + Dungeon/WB tank", profile:"defense"},
     warlord_rare:       {name:"Ironheart Roderic",    specialty:"Attack Bonus",  affinity:"Infantry · Cavalry", role:"Backup attacker — replaces an injured damage dealer or reinforces an ally", profile:"offense"},
-    taskmaster_epic:    {name:"Forgefist Durgan",     specialty:"Training Speed",affinity:"Infantry · Cavalry", role:"Stationed at home while the castle is safe — Training Speed; Arena Shatter-enabler", profile:"defense"},
+    taskmaster_epic:    {name:"Forgefist Durgan",     specialty:"Training Speed",affinity:"Infantry · Cavalry", role:"Stationed at home while the castle is safe — Training Speed; Arena Shatter-enabler", profile:"training"},
     deadeye_epic:       {name:"Deadeye Kestrel",      specialty:"Attack Bonus",  affinity:"Archer · Cavalry",   role:"Damage dealer on the map (Archer burst)", profile:"offense"},
     // Added 2026-10-23 from screenshots. The game now labels heroes with a category (Support,
     // Utility, ...) — used as the specialty text here since their specialty names weren't
@@ -1051,6 +1052,11 @@ window.addEventListener('load', function () {
     support: {
       atk:0.1, def:0.05, hp:0.35,
       pct:{healingSpeed:14, healthPercent:8, pvpDefense:3, gatherSpeed:2}
+    },
+    // Durgan's home set — Training Speed is a constant buff while he's stationed.
+    training: {
+      atk:0.05, def:0.05, hp:0.2,
+      pct:{trainingSpeed:16}
     },
     // Fastest unit on the map (Lyris, 2026-10-23) — sent to raid gatherers / route, so March
     // Speed dominates, with some attack so she can actually win the fight once she arrives.
@@ -1126,15 +1132,20 @@ window.addEventListener('load', function () {
     return heroDefId ? troopStatMultiplier(heroDefId, statKey) : 1;
   }
 
-  var PROFILE_LABEL = {gathering:"Gathering", offense:"Offense", defense:"Defence", support:"Healer", speed:"Speed", power:"Max power"};
+  var PROFILE_LABEL = {gathering:"Gathering", offense:"Offense", defense:"Defence", support:"Healer", training:"Training", speed:"Speed", power:"Max power"};
 
-  // Gatherers only take gear that actually helps gathering (2026-10-23, per user) — they sit
-  // high in the list to protect gathering gear, and without this an empty gatherer slot would
-  // grab the best raw-stat item instead, starving combat heroes ranked below them.
-  var GATHER_GEAR_STATS = ["gatherSpeed","gatherSpeedFood","gatherSpeedWood","gatherSpeedStone","gatherSpeedGold","nodeYield","marchCapacity"];
-  function hasGatherStat(row){
+  // Profiles that only take gear carrying their own stat (2026-10-23, per user). These heroes
+  // sit high in the list to protect that gear — gatherers' gathering items, Seraphina's Healing
+  // Speed, Durgan's Training Speed (constant buffs while stationed) — and without this an
+  // empty slot would grab the best raw-stat item instead, starving combat heroes below them.
+  var ONLY_STAT_GEAR = {
+    gathering: ["gatherSpeed","gatherSpeedFood","gatherSpeedWood","gatherSpeedStone","gatherSpeedGold","nodeYield","marchCapacity"],
+    support: ["healingSpeed"],
+    training: ["trainingSpeed"]
+  };
+  function hasAnyStat(row, keys){
     var stats = safeJSON(row.resolved_stats, {});
-    return GATHER_GEAR_STATS.some(function(k){ return (stats[k] || 0) > 0; });
+    return keys.some(function(k){ return (stats[k] || 0) > 0; });
   }
 
   // One set per hero (2026-10-23): these heroes also do Dungeon/Arena but don't get a separate
@@ -1164,10 +1175,13 @@ window.addEventListener('load', function () {
     // Map combat now fields up to 5 units at once: Hadrian + Aldric hold the front line (and
     // the walls in a siege) while Valeria, Kael and Kestrel deal damage. Theron and Roderic are
     // backups for injured heroes / ally reinforcement. Seraphina and Durgan stay stationed at
-    // home while the castle is safe.
+    // home while the castle is safe, and rank right behind the attackers so they never miss
+    // good Healing/Training Speed gear — they only take items with that stat (ONLY_STAT_GEAR).
     {hero:"champion_legendary", profile:"offense",   context:"march"},
     {hero:"bloodreaver_epic",   profile:"offense",   context:"march"},
     {hero:"deadeye_epic",       profile:"offense",   context:"march"},
+    {hero:"healer_rare",        profile:"support",   context:"march"},
+    {hero:"taskmaster_epic",    profile:"training",  context:"march"},
     {hero:"bastion_epic",       profile:"defense",   context:"march"},
     {hero:"emissary_legendary", profile:"defense",   context:"march"},
     {hero:"starter_gatherer",   profile:"power",     context:"instanced"},
@@ -1178,7 +1192,6 @@ window.addEventListener('load', function () {
     {hero:"commander_rare",     profile:"gathering", context:"march"},
     {hero:"garrison_theron",    profile:"defense",   context:"march"},
     {hero:"warlord_rare",       profile:"offense",   context:"march"},
-    {hero:"healer_rare",        profile:"support",   context:"march"},
     {hero:"raider_common",      profile:"speed",     context:"march"},
     {hero:"taskmaster_epic",    profile:"defense",   context:"instanced"},
     {hero:"starter_warlord",    profile:"offense",   context:"march"}
@@ -1724,7 +1737,7 @@ window.addEventListener('load', function () {
           if (currentItem && row.item_id === currentItem.item_id) return true;
           if (wornIds[row.item_id]) return false;
           if (isBenchItemClaimed(claimedBenchIds, row.item_id, lo.hero, context)) return false;
-          if (profile === "gathering" && !hasGatherStat(row)) return false;
+          if (useAffixes && ONLY_STAT_GEAR[profile] && !hasAnyStat(row, ONLY_STAT_GEAR[profile])) return false;
           if (currentIsSetProtected){
             var rowInfo = realSetInfo(row, context);
             // march_set_id looks to be a per-hero PRESET identifier, not a shared item-type

@@ -289,27 +289,33 @@ Cavalry, Valeria Cavalry · Infantry, Thorek Infantry · Archer.
 | 1 | Dawnbringer Valeria | Lead damage dealer; same gear in Dungeon/Arena | Offense |
 | 2 | Bloodreaver Kael | Damage dealer (Cavalry); same gear in Dungeon/Arena | Offense |
 | 3 | Deadeye Kestrel | Damage dealer (Archer burst) | Offense |
-| 4 | Bastion Hadrian | Front-line tank, walls in a siege; same gear as Dungeon/WB tank | Defence |
-| 5 | Silvertongue Aldric | Front-line tank, walls in a siege | Defence |
-| 6 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
-| 7 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
-| 8 | Gatherer Elena | Gathering (prefers food) | Gathering |
-| 9 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
-| 10 | Stonewall Borin | Gathering (usually stone) | Gathering |
-| 11 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
-| 12 | Ironwall Theron | Backup defender / reinforce allies | Defence |
-| 13 | Ironheart Roderic | Backup attacker / reinforce allies | Offense |
-| 14 | Moonveil Seraphina | Stationed while safe — Healing Speed first | Healer |
-| 15 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; all-Cavalry | Speed |
-| 16 | Forgefist Durgan | Stationed while safe (Training Speed); Arena Shatter | Defence (Instanced) |
-| 17 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
+| 4 | Moonveil Seraphina | Stationed while safe — Healing Speed gear only | Healer |
+| 5 | Forgefist Durgan | Stationed while safe — Training Speed gear only | Training (new) |
+| 6 | Bastion Hadrian | Front-line tank, walls in a siege; same gear as Dungeon/WB tank | Defence |
+| 7 | Silvertongue Aldric | Front-line tank, walls in a siege | Defence |
+| 8 | Gatherer Elena | Dungeon/Weekly Boss — power as high as possible | Max power (Instanced) |
+| 9 | Goldvein Thorek | Gathering (prefers gold) | Gathering |
+| 10 | Gatherer Elena | Gathering (prefers food) | Gathering |
+| 11 | Leafsong Aelindra | Gathering (prefers wood) | Gathering |
+| 12 | Stonewall Borin | Gathering (usually stone) | Gathering |
+| 13 | Battlehorn Cassian | Gathering (whatever's short) | Gathering |
+| 14 | Ironwall Theron | Backup defender / reinforce allies | Defence |
+| 15 | Ironheart Roderic | Backup attacker / reinforce allies | Offense |
+| 16 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; all-Cavalry | Speed |
+| 17 | Forgefist Durgan | Arena Shatter | Defence (Instanced) |
+| 18 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
+
+Seraphina and Durgan rank right behind the attackers because their buffs are
+constant (~99% of the time). Like gatherers, they only take items carrying
+their own stat, so ranking them high never takes other gear from the heroes
+below them.
 
 ### Open items
 1. Elena's max-power set (#6) outranks every gatherer, so it can take
    gathering items Thorek and the others wanted. Those items still count for
    Elena's own gathering set, since one hero can wear an item in both.
-2. Durgan's Training Speed works at home, but his only set is Arena, which
-   scores raw stats only — Training Speed gear isn't counted anywhere.
+2. Durgan's home set assumes the march set is what counts while he's
+   stationed — unverified.
 3. A rarity-based "command cap" hasn't been verified — worth a screenshot if
    one exists.
 4. Valeria's projected Lv50 stats are a guess — another level's stats would
