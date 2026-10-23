@@ -221,3 +221,90 @@ mechanically (untested now that the Arena team uses only one tank).
 4. Gather Speed and Training Speed specialty scaling/stacking rules (additive
    vs. multiplicative, same open question as Phase 2's economy stats) still
    unverified — low stakes, non-combat.
+
+---
+
+## 6. Role assignment — 16 heroes (2026-10-23)
+
+Three new heroes joined: **Silvertongue Aldric** (`emissary_legendary`,
+Legendary, "Support"), **Dawnbringer Valeria** (`champion_legendary`,
+Legendary, PvE) and **Goldvein Thorek** (`overseer_epic`, Epic, "Utility").
+The game now labels heroes with a category (Support, Utility, ...). Troop
+affinity for the three new heroes hasn't been recorded yet.
+
+What their screenshots show:
+- **Aldric:** every skill bonus is PvP-only — Army Attack +9%, Army Defense
+  +7.2%, Damage Multiplier +7.2% (plus a small Infantry ATK/DEF skill). A PvP
+  army buffer.
+- **Valeria:** every skill bonus is PvE-only, Daily Dungeon-only or
+  Arena-only — Army Attack/Defense/Health (PvE), Damage Multiplier (Dungeon,
+  Arena), Hero Attack (Arena). Base DEF only 4.8K against 52.8K ATK, so she
+  can't take hits herself.
+- **Thorek:** Gather Speed skill +14.4% and Gold Gathering skill +3.6%,
+  Building Speed +4.5%. His +9.5% Stone Gathering comes only from gear.
+
+### Gathering: one specialist per resource
+
+Five gatherers. Each sticks to one resource, and the recommender now has a
+profile per resource (`gatherFood`/`gatherWood`/`gatherStone`/`gatherGold`)
+that weights that resource's speed as highly as overall Gather Speed and
+ignores the other three. That steers single-resource gear to the right hero.
+
+| Resource | Hero | Why |
+|---|---|---|
+| Gold | Goldvein Thorek | Gold Gathering skill |
+| Food | Gatherer Elena | Food specialist |
+| Wood | Leafsong Aelindra | Wood specialist |
+| Stone | Stonewall Borin | No hero has a stone skill, so the edge has to come from Stone Gathering gear; Borin's defence makes him the safest to leave on a node |
+| Flex | Battlehorn Cassian | Covers whichever resource is short; Aldric now covers the support/commander niche |
+
+Forgefist Durgan comes **off** gathering: his Training Speed only works while
+he's garrisoned, so every march cost him that passive.
+
+### Full breakdown
+
+Rank = position in the recommender's priority list (higher rank wins a
+contested item). Gear-claim order matters most for the bottom half.
+
+| Hero | Lv / Power | Role | Recommender loadouts (rank) |
+|---|---|---|---|
+| Bloodreaver Kael | 50 / 175K | PvP Offense lead (Cavalry) + Dungeon/WB & Arena DPS | Offense march (1), Offense instanced (18) |
+| Deadeye Kestrel | 49 / 155K | PvP Offense (Archer burst) | Offense march (2) |
+| Silvertongue Aldric | 39 / 168K | **New** — PvP support / army buffer | Offense march (3) |
+| Bastion Hadrian | 50 / 204K | Garrison (sole defender) + Instanced tank | Defence march (4), Defence instanced (19) |
+| Moonveil Seraphina | 50 / 121K | Garrison healer (Healing Speed only works garrisoned) | Defence march (5) |
+| Ironwall Theron | 48 / 110K | War-reinforcement standby ("Reinforce" set) | Defence march (6) |
+| Ironheart Roderic | 39 / 82K | PvP Offense (Infantry) | Offense march (7) |
+| Swiftarrow Lyris | 44 / 68K | PvP Offense / Monster Den (Archer) | Offense march (8) |
+| Warlord Marcus | 43 / 51K | PvP Offense / Monster Den (Archer) | Offense march (9) |
+| Dawnbringer Valeria | 33 / 71K | **New** — PvE: Monster Den lead; Dungeon DPS candidate | PvE march (10) |
+| Goldvein Thorek | 31 / 86K | **New** — Gold gathering | Gathering: Gold (11) |
+| Gatherer Elena | 50 / 56K | Food gathering + Dungeon/WB loot | Gathering: Food (12), Defence instanced (21) |
+| Leafsong Aelindra | 42 / 74K | Wood gathering | Gathering: Wood (13) |
+| Stonewall Borin | 38 / 68K | Stone gathering | Gathering: Stone (14), Defence reserve (17) |
+| Battlehorn Cassian | 39 / 62K | Flex gathering | Gathering flex (15), Defence reserve (16) |
+| Forgefist Durgan | 39 / 86K | Garrison (Training Speed) + Arena Shatter | Defence instanced (20) — no march loadout |
+
+New `pve` profile (Valeria) scores Monster Damage, Army/troop Attack,
+Monster Damage Reduction and First Round Damage — the Monster Den stats that
+were taken out of the offense/defense profiles on 2026-09-29.
+
+### Open questions — gear possibly tied up for nothing
+
+1. **Six offense marches.** Kael, Kestrel, Aldric, Roderic, Lyris and Marcus
+   all hold a full march kit. If you don't actually field all six, the bottom
+   ones (Marcus at 51K, Lyris at 68K) are holding up to 12 items that could
+   be fed into upgrades instead.
+2. **Durgan's march gear.** He still wears 5 march items but no longer has a
+   march job. The recommender treats worn gear as his, so those items are
+   locked away from everyone else until you take them off him.
+3. **Cassian and Borin's Defence reserve kits** (ranks 16–17). These claim
+   bench items for a second job. Drop them if neither hero ever actually
+   fills in on defence.
+4. **Valeria has no gear.** At rank 10 she only gets what the PvP heroes
+   leave. Move her up if Monster Den matters more than the lower PvP slots.
+5. **Valeria in Dungeon.** Her Instance abilities aren't recorded yet, so
+   swapping her in for Kael's Dungeon DPS slot is untested.
+6. **Troop affinity** for Aldric, Valeria and Thorek isn't recorded. It
+   matters for Aldric and Valeria, whose troop-specific stats are scored. The
+   default split is Infantry-led and can be edited per loadout.
