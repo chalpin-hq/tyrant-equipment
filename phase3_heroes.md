@@ -304,8 +304,7 @@ Cavalry, Valeria Cavalry · Infantry, Thorek Infantry · Archer.
 | 16 | Ironwall Theron | Backup defender / reinforce allies | Defence |
 | 17 | Ironheart Roderic | Backup attacker / reinforce allies | Offense |
 | 18 | Swiftarrow Lyris | Speed — fastest unit, raids gatherers, routing; all-Cavalry | Speed |
-| 19 | Forgefist Durgan | Arena Shatter | Defence (Instanced) |
-| 20 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
+| 19 | Warlord Marcus | Not used — bragging power, leftovers only | Offense |
 
 Seraphina's and Durgan's buffs are constant (~99% of the time), so they sit
 right behind the two tanks. Each first takes items carrying their own buff
