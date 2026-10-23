@@ -976,24 +976,23 @@ window.addEventListener('load', function () {
   var HEROES = {
     starter_gatherer:   {name:"Gatherer Elena",      specialty:"Gather Speed",  affinity:"Cavalry · Infantry", role:"Gathering (prefers food) + separate max-power Dungeon/Weekly Boss set for the loot bonus", profile:"gathering"},
     starter_warlord:    {name:"Warlord Marcus",       specialty:"Attack Bonus",  affinity:"Archer · Infantry",  role:"Not used — bragging power, leftovers only", profile:"offense"},
-    garrison_theron:    {name:"Ironwall Theron",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"War-reinforcement standby / PvP Defense", profile:"defense"},
-    healer_rare:        {name:"Moonveil Seraphina",   specialty:"Healing Speed", affinity:"Archer · Infantry",  role:"Garrison support / healer", profile:"support"},
+    garrison_theron:    {name:"Ironwall Theron",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Backup defender — replaces an injured front-liner or reinforces an ally", profile:"defense"},
+    healer_rare:        {name:"Moonveil Seraphina",   specialty:"Healing Speed", affinity:"Archer · Infantry",  role:"Stationed at home while the castle is safe — Healing Speed", profile:"support"},
     raider_common:      {name:"Swiftarrow Lyris",     specialty:"March Speed",   affinity:"Archer · Cavalry",   role:"Speed — fastest unit on the map, for raiding gatherers and routing (run all-Cavalry)", profile:"speed"},
     harvester_uncommon: {name:"Leafsong Aelindra",    specialty:"Gather Speed",  affinity:"Cavalry · Archer",   role:"Gathering (prefers wood)", profile:"gathering"},
     guardian_common:    {name:"Stonewall Borin",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Gathering (usually covers stone — no hero has a stone skill)", profile:"gathering"},
-    bloodreaver_epic:   {name:"Bloodreaver Kael",     specialty:"Attack Bonus",  affinity:"Cavalry · Infantry", role:"PvP Offense / Monster Den (Cavalry) + Dungeon/WB & Arena DPS", profile:"offense"},
+    bloodreaver_epic:   {name:"Bloodreaver Kael",     specialty:"Attack Bonus",  affinity:"Cavalry · Infantry", role:"Damage dealer on the map (Cavalry) + Dungeon/WB & Arena DPS", profile:"offense"},
     commander_rare:     {name:"Battlehorn Cassian",   specialty:"Leadership",    affinity:"Archer · Infantry",  role:"Gathering — whichever resource is short (Aldric now covers the support/commander niche)", profile:"gathering"},
-    bastion_epic:       {name:"Bastion Hadrian",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Garrison (sole defender) + Dungeon/WB & Arena tank", profile:"defense"},
-    warlord_rare:       {name:"Ironheart Roderic",    specialty:"Attack Bonus",  affinity:"Infantry · Cavalry", role:"PvP Offense (Infantry)", profile:"offense"},
-    taskmaster_epic:    {name:"Forgefist Durgan",     specialty:"Training Speed",affinity:"Infantry · Cavalry", role:"Arena Shatter-enabler only (stays home for Training Speed)", profile:"defense"},
-    deadeye_epic:       {name:"Deadeye Kestrel",      specialty:"Attack Bonus",  affinity:"Archer · Cavalry",   role:"PvP Offense / Monster Den (Archer burst)", profile:"offense"},
+    bastion_epic:       {name:"Bastion Hadrian",      specialty:"Defense Bonus", affinity:"Infantry · Archer",  role:"Front-line tank on the map, on the walls in a siege + Dungeon/WB tank", profile:"defense"},
+    warlord_rare:       {name:"Ironheart Roderic",    specialty:"Attack Bonus",  affinity:"Infantry · Cavalry", role:"Backup attacker — replaces an injured damage dealer or reinforces an ally", profile:"offense"},
+    taskmaster_epic:    {name:"Forgefist Durgan",     specialty:"Training Speed",affinity:"Infantry · Cavalry", role:"Stationed at home while the castle is safe — Training Speed; Arena Shatter-enabler", profile:"defense"},
+    deadeye_epic:       {name:"Deadeye Kestrel",      specialty:"Attack Bonus",  affinity:"Archer · Cavalry",   role:"Damage dealer on the map (Archer burst)", profile:"offense"},
     // Added 2026-10-23 from screenshots. The game now labels heroes with a category (Support,
     // Utility, ...) — used as the specialty text here since their specialty names weren't
-    // captured. Aldric's affinity is per the user; Thorek's and Valeria's aren't recorded yet,
-    // so they're left blank (default troop split seeds Infantry-led; edit per loadout).
-    overseer_epic:      {name:"Goldvein Thorek",      specialty:"Utility (Gathering)", affinity:"", role:"Gathering (prefers gold — Gold Gathering skill)", profile:"gathering"},
-    emissary_legendary: {name:"Silvertongue Aldric",  specialty:"Support (PvP)", affinity:"Infantry · Cavalry", role:"Main PvP attacker — PvP-only Army ATK/DEF + Damage Multiplier skills buff the whole march", profile:"offense"},
-    champion_legendary: {name:"Dawnbringer Valeria",  specialty:"PvE",           affinity:"", role:"Damage dealer — one set for Dungeon, Arena and on-map fights (skills are PvE/Dungeon/Arena-only; raw ATK still feeds Hero command in PvP)", profile:"offense"}
+    // captured. Affinities read off the troop icons on the in-game hero list.
+    overseer_epic:      {name:"Goldvein Thorek",      specialty:"Utility (Gathering)", affinity:"Infantry · Archer", role:"Gathering (prefers gold — Gold Gathering skill)", profile:"gathering"},
+    emissary_legendary: {name:"Silvertongue Aldric",  specialty:"Support (PvP)", affinity:"Infantry · Cavalry", role:"Front-line tank on the map, on the walls in a siege — DEF-heavy base stats; PvP skills also buff Army ATK", profile:"defense"},
+    champion_legendary: {name:"Dawnbringer Valeria",  specialty:"PvE",           affinity:"Cavalry · Infantry", role:"Lead damage dealer on the map + Dungeon/Arena — highest base ATK for her level (skills are PvE/Dungeon/Arena-only; raw ATK still feeds Hero command in PvP)", profile:"offense"}
   };
 
   // Heroes whose specialty only functions while garrisoned (stationed home, not out on a
@@ -1162,20 +1161,24 @@ window.addEventListener('load', function () {
   var DEFAULT_LOADOUTS = [
     // One set per hero (2026-10-23, per user) — Kael/Hadrian/Valeria copy their set into
     // Dungeon/Arena (MIRROR_TO_INSTANCED). Only Elena keeps two: gathering + max-power Dungeon.
-    {hero:"emissary_legendary", profile:"offense",   context:"march"},
+    // Map combat now fields up to 5 units at once: Hadrian + Aldric hold the front line (and
+    // the walls in a siege) while Valeria, Kael and Kestrel deal damage. Theron and Roderic are
+    // backups for injured heroes / ally reinforcement. Seraphina and Durgan stay stationed at
+    // home while the castle is safe.
+    {hero:"champion_legendary", profile:"offense",   context:"march"},
     {hero:"bloodreaver_epic",   profile:"offense",   context:"march"},
     {hero:"deadeye_epic",       profile:"offense",   context:"march"},
     {hero:"bastion_epic",       profile:"defense",   context:"march"},
-    {hero:"champion_legendary", profile:"offense",   context:"march"},
+    {hero:"emissary_legendary", profile:"defense",   context:"march"},
     {hero:"starter_gatherer",   profile:"power",     context:"instanced"},
     {hero:"overseer_epic",      profile:"gathering", context:"march"},
     {hero:"starter_gatherer",   profile:"gathering", context:"march"},
     {hero:"harvester_uncommon", profile:"gathering", context:"march"},
     {hero:"guardian_common",    profile:"gathering", context:"march"},
     {hero:"commander_rare",     profile:"gathering", context:"march"},
-    {hero:"healer_rare",        profile:"support",   context:"march"},
-    {hero:"warlord_rare",       profile:"offense",   context:"march"},
     {hero:"garrison_theron",    profile:"defense",   context:"march"},
+    {hero:"warlord_rare",       profile:"offense",   context:"march"},
+    {hero:"healer_rare",        profile:"support",   context:"march"},
     {hero:"raider_common",      profile:"speed",     context:"march"},
     {hero:"taskmaster_epic",    profile:"defense",   context:"instanced"},
     {hero:"starter_warlord",    profile:"offense",   context:"march"}
