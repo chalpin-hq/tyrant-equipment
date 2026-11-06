@@ -583,7 +583,7 @@ window.addEventListener('load', function () {
         {slot:"Accessory", pick:"Heart of the World (Legendary)", why:"March Speed + Gather Speed guar.", alt:"Merchant's Pouch (Uncommon) — Prospector's Kit piece"}
       ],
       hero:{name:"Goldvein Thorek, Gatherer Elena, Leafsong Aelindra, Stonewall Borin, Battlehorn Cassian", why:"All five use one Gathering setting: overall Gather Speed and Yield first, single-resource bonuses only as a tiebreaker, so any of them can cover any node. Thorek leans gold, Elena food and Aelindra wood from their skills — send them there when convenient."},
-      note:"Run the Prospector's Kit trio together (Master Miner's Helm + Merchant's Pouch + Miner's Pick) rather than mixing one set piece in — the 3pc +6% Gather Speed bonus is lost if split."
+      note:"Aim for Legendary gathering gear. Set bonuses (Prospector's Kit, the in-game Gather set) save only a few minutes per trip once Gather Speed is already high, so the recommender doesn't hold on to them over higher-rarity pieces."
     },
     {
       role:"Monster Den", confidence:"verified",
@@ -1410,11 +1410,21 @@ window.addEventListener('load', function () {
   // — we have no evidence they do anything in Instance/Arena/Dungeon, and content-specific
   // affixes are exactly the kind of thing that plausibly doesn't carry over. Score on the three
   // core flat stats only in that case, still projected to max level.
+  // Gathering is rarity-first (2026-11-06, per user): the Gather set's +10% only cut a ~3h40
+  // trip to ~3h30 (gather speed is already ~+110%, so each extra point buys less time), not
+  // worth giving up the DEF/HP of Epic/Legendary gear. Gatherers just aim for the highest-rarity
+  // gathering gear; gather stats only break ties within the same rarity.
+  var RARITY_RANK = {common:1, uncommon:2, rare:3, epic:4, legendary:5};
+  var RARITY_FIRST_PROFILES = { gathering: true };
+  function setsProtected(profileKey){ return !RARITY_FIRST_PROFILES[profileKey]; }
   function realItemScore(row, profileKey, useAffixes, heroDefId, troopSplit){
     var w = ROLE_WEIGHTS[profileKey] || ROLE_WEIGHTS.offense;
     var stats = safeJSON(row.resolved_stats, {});
     var maxStats = equipStatsAtMax(row);
     var score = maxStats.atk*w.atk + maxStats.def*w.def + maxStats.hp*w.hp;
+    if (RARITY_FIRST_PROFILES[profileKey]){
+      score += (RARITY_RANK[String(row.rarity || "").toLowerCase()] || 0) * 1e9;
+    }
     if (useAffixes !== false){
       Object.keys(w.pct).forEach(function(key){
         var mult = effectiveTroopMultiplier(heroDefId, key, troopSplit);
@@ -1789,7 +1799,7 @@ window.addEventListener('load', function () {
       });
 
       var useAffixes = context !== "instanced";
-      var namedSetLossBySlot = useAffixes ? namedSetProtectionBySlot(currentBySlot, profile) : {};
+      var namedSetLossBySlot = (useAffixes && setsProtected(profile)) ? namedSetProtectionBySlot(currentBySlot, profile) : {};
       var heroResult = {};
       CSV_SLOTS.forEach(function(slot){
         var currentItem = currentBySlot[slot];
@@ -1799,7 +1809,7 @@ window.addEventListener('load', function () {
         // so Instanced loadouts must not get set-protected either. Without this gate an
         // Instanced set could get wrongly blocked here with no refinement pass to undo it,
         // since that pass only ever runs for march (see the `if (useAffixes)` call below).
-        var currentIsSetProtected = useAffixes && currentItem && setSizeBySlot[slot] >= 2;
+        var currentIsSetProtected = useAffixes && setsProtected(profile) && currentItem && setSizeBySlot[slot] >= 2;
         var namedSetLoss = namedSetLossBySlot[slot] || 0;
         var candidates = equip.filter(function(row){
           if (row.slot !== slot) return false;
@@ -1844,7 +1854,7 @@ window.addEventListener('load', function () {
       });
       // Set bonuses are themselves percentage-affix-style bonuses (Gather Speed, PvP ATK%, ...)
       // tied to the same unverified-for-Instance channels, so skip them here too for consistency.
-      if (useAffixes){
+      if (useAffixes && setsProtected(profile)){
         applySetBonusRefinement(heroResult, currentBySlot, profile, wornIds, claimedBenchIds, equip, lo.hero, context, lo.troopSplit);
       }
       results[lo.id] = { loadout: lo, isPrimary: isPrimary, hero: h, slots: heroResult };

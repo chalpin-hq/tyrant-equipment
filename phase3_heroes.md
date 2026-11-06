@@ -257,6 +257,13 @@ skills. **Gatherers only take items with a gathering stat** (Gather Speed,
 any single-resource speed, Yield, March Capacity), so their high rank can't
 take combat gear from heroes below them.
 
+**Gatherers aim for Legendary gathering gear.** Among items with a gathering
+stat, the recommender picks the highest rarity first; gather stats only break
+ties within a rarity. Set bonuses (the in-game Gather set, Prospector's Kit)
+are no longer protected for gatherers: the +10% Gather set only cut a
+~3h40 trip to ~3h30, since Gather Speed is already around +110% and each
+extra point saves less time. Not worth the DEF/HP of Epic/Legendary gear.
+
 **Hero power** fits roughly `0.95 × ATK + 1.0 × DEF + 0.135 × HP` across all
 16 heroes (within ~10% except Aldric). Elena's "Max power" setting uses
 these weights.
